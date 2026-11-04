@@ -1,0 +1,27 @@
+{
+  "name": "local-project-intelligence",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local-first project discovery, intelligence, and portfolio publishing for Windows.",
+  "type": "module",
+  "engines": {
+    "node": ">=24.11.0 <25",
+    "npm": ">=11.8.0 <12"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --maxWorkers=2",
+    "verify": "npm run typecheck && npm test && npm run verify:phase0",
+    "verify:phase0": "node scripts/verify-phase0.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
+  }
+}

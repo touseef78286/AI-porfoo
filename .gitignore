@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build and test output
+dist/
+build/
+out/
+coverage/
+.vite/
+.next/
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+# Local runtime data and secrets
+.data/
+.local/
+.env
+.env.*
+!.env.example
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.log
+logs/
+
+# Generated publication output unless explicitly reviewed
+publish-out/
+private-snapshots/
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local tool state
+.npm/
+.cache/

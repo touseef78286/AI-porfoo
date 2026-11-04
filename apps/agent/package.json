@@ -1,0 +1,10 @@
+{
+  "name": "@lpi/agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "fastify": "5.12.8",
+    "zod": "4.6.7"
+  }
+}
