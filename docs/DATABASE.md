@@ -452,7 +452,7 @@ Added in `apps/agent/src/db/repositories/`:
 
 | Repository | Functions | Tables |
 |---|---|---|
-| `root-repository.ts` | `insertRoot`, `findRootByCanonicalPath`, `listRoots`, `updateRootStatus` | `project_roots` |
+| `root-repository.ts` | `insertRoot`, `findRootByCanonicalPath`, `listRoots`, `listActiveRoots`, `updateRootStatus` | `project_roots` |
 | `exclusion-repository.ts` | `addExclusion`, `listExclusions`, `deleteUserExclusion`, `loadExclusionRulesForRoot` | `exclusions` |
 
 Verified behavior:
@@ -468,3 +468,5 @@ Verified behavior:
 | Invalid exclusion kind rejected by CHECK | PASS |
 
 `deleteUserExclusion` is a soft safety guarantee in SQL (`is_system = 0`); there is no API or UI that mutates exclusions yet.
+
+Gate 5 added no schema change. Traversal results are returned in memory; `scan_runs`, `scan_errors`, `projects`, and `detection_evidence` are still unwritten until scan orchestration and identity persistence land in a later gate.

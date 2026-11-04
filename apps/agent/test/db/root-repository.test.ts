@@ -10,6 +10,7 @@ import {
 import {
   findRootByCanonicalPath,
   insertRoot,
+  listActiveRoots,
   listRoots,
   updateRootStatus,
 } from "../../src/db/repositories/root-repository.js";
@@ -71,6 +72,36 @@ describe("root repository", () => {
     insertRoot(database, { id: "a", canonicalPath: "t:\\a", displayPath: "A" });
 
     expect(listRoots(database).map((root) => root.id)).toEqual(["a", "b"]);
+  });
+
+  it("lists only ACTIVE roots for traversal", () => {
+    insertRoot(database, { id: "active", canonicalPath: "t:/active", displayPath: "Active" });
+    insertRoot(database, {
+      id: "paused",
+      canonicalPath: "t:/paused",
+      displayPath: "Paused",
+      status: "PAUSED",
+    });
+    insertRoot(database, {
+      id: "removed",
+      canonicalPath: "t:/removed",
+      displayPath: "Removed",
+      status: "REMOVED",
+    });
+
+    expect(listRoots(database)).toHaveLength(3);
+    expect(listActiveRoots(database).map((root) => root.id)).toEqual(["active"]);
+  });
+
+  it("returns an empty list when no root is active", () => {
+    insertRoot(database, {
+      id: "paused",
+      canonicalPath: "t:/paused",
+      displayPath: "Paused",
+      status: "PAUSED",
+    });
+
+    expect(listActiveRoots(database)).toEqual([]);
   });
 
   it("updates status and last error", () => {

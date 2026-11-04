@@ -16,6 +16,7 @@ export type { DatabaseInspection } from "./backup.js";
 export {
   findRootByCanonicalPath,
   insertRoot,
+  listActiveRoots,
   listRoots,
   updateRootStatus,
 } from "./repositories/root-repository.js";

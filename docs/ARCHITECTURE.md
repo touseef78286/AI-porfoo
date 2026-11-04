@@ -5,15 +5,16 @@ Last updated: 2026-11-04
 
 ## 1. Implemented reality
 
-As of Gate 4 of Phase 1:
+As of Gate 5 of Phase 1:
 
-- The repository contains documentation, root metadata, configuration, two workspace manifests, scaffold files, a database layer, and the root/exclusion safety policy.
-- `@lpi/core` exports identity constants plus pure path, deny, exclusion, glob, and sensitive-file rules. It imports no filesystem, database, or HTTP module.
-- `@lpi/agent` exports an identity constant, the SQLite adapter, migration runner, migration 0001, backup/restore helpers, the filesystem root validator, and root/exclusion repositories.
-- A pinned development toolchain is installed and verified: type check and 105 tests pass.
+- The repository contains documentation, root metadata, configuration, two workspace manifests, scaffold files, a database layer, the root/exclusion safety policy, and bounded manifest traversal.
+- `@lpi/core` exports identity constants plus pure path, deny, exclusion, glob, sensitive-file, manifest-signature, and traversal-policy rules. It imports no filesystem, database, or HTTP module.
+- `@lpi/agent` exports an identity constant, the SQLite adapter, migration runner, migration 0001, backup/restore helpers, the filesystem root validator, root/exclusion repositories, and the traversal adapter.
+- A pinned development toolchain is installed and verified: type check and 142 tests pass.
 - Migration 0001 defines the Phase 1 discovery tables and is verified against in-memory and temporary file databases.
 - Root validation canonicalizes real directories, rejects drive roots, system/credential locations, UNC paths, traversal segments, and reparse-point roots; exclusions are enforced by a core matcher and persisted per root.
-- No runtime database file exists, no API exists, no scanner or traversal exists, no watcher exists.
+- Traversal is breadth-first and bounded, evaluates exclusions before descent, skips reparse points, reads only allowlisted manifests within a byte bound, and produces deterministic results.
+- No runtime database file exists, no API exists, no watcher exists.
 - No application entry point starts a process and no public portfolio exists.
 
 Everything below describes the approved target architecture for upcoming phases. It must not be presented as implemented until code and verification exist.

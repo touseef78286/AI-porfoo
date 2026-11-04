@@ -117,6 +117,8 @@ Implementation status (Gate 4, `VERIFIED` by tests): `apps/agent/src/roots/valid
 - Open-folder operations resolve a project ID from the database, verify it is under an authorized root, and then invoke the OS shell with an argument array.
 - Do not execute discovered project scripts or binaries.
 
+Implementation status (Gate 5, `VERIFIED` by tests): `traverseRoot` uses `lstat` per entry, skips and records reparse points, never follows them, and checks that every candidate path stays under the root's canonical comparison path. Error messages are generic and never contain absolute paths. The remaining bullets (project-open, OS shell) belong to later API work.
+
 ### 5.3 Sensitive deny list
 
 Deny before opening, at minimum:
@@ -141,6 +143,8 @@ Implementation status (Gate 4): the name, extension, and directory rules are imp
 - Do not read lockfile contents merely to detect a project; presence is enough in Phase 1.
 - Do not read source files for detection.
 - Close file handles promptly.
+
+Implementation status (Gate 5): only allowlisted manifests are opened, `readContent: false` entries (all lockfiles and config files) are never opened at all, reads are capped at `maxManifestBytes` (256 KiB default) with a `maxBytes + 1` buffer, and handles close in `finally`. Content is hashed and discarded; nothing is stored.
 
 ## 6. Git metadata
 

@@ -89,6 +89,15 @@ export function listRoots(database: DatabaseSync): ProjectRoot[] {
   return rows.map(mapRow);
 }
 
+/** Roots traversal may visit. Paused, unavailable, and removed roots are excluded. */
+export function listActiveRoots(database: DatabaseSync): ProjectRoot[] {
+  const rows = database
+    .prepare("SELECT * FROM project_roots WHERE status = 'ACTIVE' ORDER BY canonical_path")
+    .all() as unknown as ProjectRootRow[];
+
+  return rows.map(mapRow);
+}
+
 export function updateRootStatus(
   database: DatabaseSync,
   id: string,

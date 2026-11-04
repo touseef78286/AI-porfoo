@@ -7,3 +7,4 @@
 export const CORE_PACKAGE_NAME = "@lpi/core" as const;
 
 export * from "./roots/index.js";
+export * from "./discovery/index.js";

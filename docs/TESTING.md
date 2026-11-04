@@ -286,6 +286,35 @@ Two defects were found and fixed during this gate rather than worked around:
 - `globToRegExp("src/**/test")` incorrectly matched `src/atest` because `**/` was translated as `.*(?:/)?`. Translated to `(?:.*/)?` so `**/` consumes zero or more complete segments.
 - A traversal test used `path.join`, which normalizes `..` away, so the validator never saw the segment. The test now builds the raw path string; the production rule was correct all along.
 
+### Phase 1 — Gate 5 executed checks
+
+Executed on 2026-11-04 with Vitest 5.1.0, 2 workers; full suite 32.26 s.
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` | PASS: exit 0 |
+| `npm test` | PASS: 15 files, 142 tests |
+| Manifest signature matching (exact, extension, prefix, case-insensitive) | PASS |
+| Exact match wins over extension (`build.gradle.kts`) | PASS |
+| Lockfile bodies marked presence-only | PASS |
+| Limit normalization and clamping | PASS |
+| Manifests found at depth with SHA-256 fingerprints | PASS |
+| Deterministic ordering and no duplicates across repeated runs | PASS |
+| Default ignore set never descended (`node_modules`, `dist`, nested `build`) | PASS |
+| User `DIRECTORY` and `PATH` rules applied before descent | PASS |
+| Junction skipped, recorded, and not followed | PASS: executed, not skipped |
+| Depth limit records `DEPTH_LIMIT` without failing the run | PASS |
+| Oversized manifest records `TOO_LARGE` with no fingerprint | PASS |
+| Directory, file, and duration budgets produce `LIMIT_EXCEEDED` | PASS |
+| Missing root returns `FAILED`/`ROOT_UNAVAILABLE` without throwing | PASS |
+| Injected `EACCES` recorded as `PERMISSION_DENIED`, scan continues | PASS |
+| Sensitive files (`.env`, `id_rsa`, `.pem`) never become observations | PASS |
+| Only `ACTIVE` roots returned for traversal | PASS |
+| Real bounded traversal of this workspace | PASS: `COMPLETED`, 14 dirs visited, 14 skipped, 34 files, 5 manifests, 3 read, 116 ms, only `DEPTH_LIMIT` |
+| Test artifact cleanup | VERIFIED: `.cache/test-tmp` empty |
+
+Permission testing uses the `TraversalIo` seam rather than filesystem ACLs, because modifying ACLs would require elevation on this machine. The real filesystem path is still exercised by every other traversal test.
+
 ## 11. Known test limitations
 
 - The machine has low free RAM; test concurrency must remain bounded.
@@ -293,7 +322,7 @@ Two defects were found and fixed during this gate rather than worked around:
 - Windows Developer Mode is not enabled and Git `core.longpaths` is not configured; long-path behavior must be measured, not assumed.
 - `node:sqlite` is experimental; backup/restore must be explicitly tested.
 - No Git repository was initialized during the audit; history starts after Phase 0 setup.
-- Automated test execution is available as of Gate 2 (Vitest). As of Gate 4, 105 tests cover the database layer, root/exclusion policy, and sensitive-file denial. Traversal, detection, identity, and API behavior remain untested because they do not exist.
+- Automated test execution is available as of Gate 2 (Vitest). As of Gate 5, 142 tests cover the database layer, root/exclusion policy, sensitive-file denial, manifest matching, and bounded traversal. Detection/parsing, identity, persistence of scan results, and API behavior remain untested because they do not exist.
 
 ## 12. Definition of verified
 

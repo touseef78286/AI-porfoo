@@ -66,7 +66,9 @@ Default traversal:
 
 Built-in ignore rules are system exclusions. A user may add exclusions but cannot silently disable safety rules.
 
-Implementation status (Gate 4): the set above is implemented as `DEFAULT_IGNORED_DIRECTORY_NAMES` in `packages/core/src/roots/exclusions.ts`. `createExclusionMatcher` evaluates system rules first, so an equivalent user rule cannot downgrade them. The matcher is unit-tested; traversal does not call it yet.
+Implementation status (Gate 4–5): the set above is implemented as `DEFAULT_IGNORED_DIRECTORY_NAMES` in `packages/core/src/roots/exclusions.ts`. `createExclusionMatcher` evaluates system rules first, so an equivalent user rule cannot downgrade them. `traverseRoot` calls the matcher before descending into a directory or opening a file, and `directoriesSkipped` counts skipped directories.
+
+Bounded traversal is implemented in `apps/agent/src/discovery/traverse-root.ts`: breadth-first with an explicit queue, concurrency 8 by default, depth 12, 20,000 directories, 100,000 files, 120 s, and 200 recorded errors. Exceeding a budget sets `LIMIT_EXCEEDED`; exceeding depth records `DEPTH_LIMIT` and continues. Reparse points are `lstat`ed, skipped, and returned in `skippedReparsePoints`. Results are sorted, so concurrent traversal is deterministic. Progress callbacks exist but nothing consumes them yet.
 
 ## 5. File reads
 
@@ -85,6 +87,8 @@ Rules:
 - Treat invalid JSON/TOML/XML as evidence with `INVALID` parser state, not a crash.
 - Do not read source files, lockfile bodies, or dependency directories.
 - Do not store raw manifest content in the database.
+
+Implementation status (Gate 5): `packages/core/src/discovery/manifests.ts` defines the allowlist, read policy, and 256 KiB bound. `traverseRoot` applies `checkManifestRead` before any open, rejects files whose stat size exceeds the bound with `TOO_LARGE`, reads through a fixed `maxBytes + 1` buffer, and returns a SHA-256 fingerprint instead of content. Parsers do not exist yet, so `INVALID` parser state is not produced.
 
 ## 6. Signature model
 

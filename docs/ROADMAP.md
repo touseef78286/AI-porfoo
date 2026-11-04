@@ -10,11 +10,11 @@ Last updated: 2026-11-04
 | Phase 0 architecture and documentation | IMPLEMENTED (this document set) |
 | Phase 0 repository scaffold | IMPLEMENTED (metadata and docs only) |
 | Engineering playbook | IMPLEMENTED (`docs/ENGINEERING_PLAYBOOK.md`) |
-| Phase 1 implementation | IN PROGRESS — Gates 1–4 complete |
+| Phase 1 implementation | IN PROGRESS — Gates 1–5 complete |
 | Dependencies installed | MINIMAL PINNED TOOLCHAIN (92 packages) |
-| Application code | DATABASE LAYER + ROOT/EXCLUSION POLICY |
-| Tests executed | 105 tests PASSING (11 files) |
-| Git repository | INITIALIZED (`main`, 3 commits) |
+| Application code | DATABASE + ROOT POLICY + BOUNDED TRAVERSAL |
+| Tests executed | 142 tests PASSING (15 files) |
+| Git repository | INITIALIZED (`main`, 6 commits) |
 | Public portfolio | NOT STARTED |
 
 Phase 0 is complete and confirmed by the user. The workspace remains in a controlled pre-implementation state until Phase 1 is explicitly authorized.
@@ -107,12 +107,30 @@ Goal: discover real projects inside explicitly authorized roots and persist a tr
   - Also denies the machine's real system locations from the environment (`SystemRoot`, `windir`, `ProgramFiles`, `ProgramFiles(x86)`, `ProgramData`) and the profile root itself, so the policy holds when Windows or the profile is not on `C:`. Project folders inside a profile remain authorizable.
   - Stores the lowercase canonical comparison path while preserving the user's `displayPath`.
 - Repositories over migration 0001: `root-repository.ts` (`insertRoot`, `findRootByCanonicalPath`, `listRoots`, `updateRootStatus`) and `exclusion-repository.ts` (`addExclusion`, `listExclusions`, `deleteUserExclusion`, `loadExclusionRulesForRoot`); system exclusions cannot be deleted.
-- 76 tests added; 105 tests pass across 11 files. The NTFS junction test executed on this machine (not skipped).
-- Still absent: traversal itself, scan orchestration, API, and any runtime database file.
+- 76 tests added in this gate; the NTFS junction test executed on this machine (not skipped).
+- Still absent at the end of this gate: traversal, scan orchestration, API, and any runtime database file.
+
+**Gate 5 — bounded manifest-only traversal (COMPLETE).**
+
+- Pure policy in `@lpi/core`:
+  - `discovery/manifests.ts`: explicit signature table for Node, Python, Rust, Go, Dart, JVM, .NET, PHP, and Ruby, each marked `STRONG`/`SUPPORTING` and `readContent` true/false. Lockfile bodies are presence-only. `MANIFEST_MAX_BYTES` is 256 KiB.
+  - `discovery/traversal-policy.ts`: approved defaults (`maxDepth` 12, 20,000 directories, 100,000 files, 120 s, concurrency 8, 200 errors) and `normalizeTraversalLimits`, which clamps overrides so no caller can request an unbounded scan. Result, error, and parser-state types mirror the database enums.
+- Agent traversal in `apps/agent/src/discovery/`:
+  - `traverseRoot` performs breadth-first traversal with bounded concurrency and an explicit queue.
+  - Exclusions are evaluated before descending or opening; built-in rules are always applied.
+  - Every entry is `lstat`ed; symbolic links and junctions are skipped, recorded as `REPARSE_POINT`, and returned in `skippedReparsePoints`.
+  - Only allowlisted manifests are considered; readable ones are opened with `checkManifestRead` first, size-checked, read through a bounded buffer, and fingerprinted with SHA-256. Lockfiles are recorded without reading.
+  - Budgets produce `LIMIT_EXCEEDED`; depth produces `DEPTH_LIMIT`; permission, disappearance, and resource failures are recorded generically without absolute paths, and traversal continues.
+  - Results are sorted, so concurrent traversal is deterministic.
+  - `traversal-io.ts` isolates filesystem access and error classification; it is also the test seam for permission failures on Windows.
+- `listActiveRoots` was added so only `ACTIVE` roots are traversable.
+- 37 tests added; 142 tests pass across 15 files.
+- Self-check on this workspace: `COMPLETED`, 14 directories visited, 14 skipped, 34 files inspected, 5 manifests seen, 3 read, 116 ms, only `DEPTH_LIMIT` errors.
+- Still absent: project detection/parsing, persistence of scan results, API, and any runtime database file.
 
 ### Remaining work
 
-Gates 5–8 below remain outstanding.
+Gates 6–8 below remain outstanding.
 
 ### Planned implementation
 
@@ -251,16 +269,18 @@ Acceptance: complete system works reliably on the measured hardware and all secu
 
 ## Exact next engineering task
 
-**Phase 1 Gate 5 — bounded manifest-only traversal. Only when explicitly authorized.**
+**Phase 1 Gate 6 — ecosystem detectors and manifest parsing. Only when explicitly authorized.**
 
-Gate 4 is complete and verified. Gate 5 must:
+Gate 5 is complete and verified. Gate 6 must:
 
-1. Enumerate authorized roots from `project_roots` where `status = 'ACTIVE'`.
-2. Evaluate system and user exclusions before descending into a directory, using `createExclusionMatcher` and `loadExclusionRulesForRoot`.
-3. Skip and record reparse points instead of following them.
-4. Read only allowlisted, size-bounded manifests, and only after `checkManifestRead` returns `allowed: true`.
-5. Apply bounded concurrency, depth, and per-run budgets with explicit `LIMIT_EXCEEDED`.
-6. Record permission errors without aborting the scan.
-7. Add traversal and path-escape integration tests against generated fixtures under `.cache/test-tmp`.
+1. Parse only the bytes traversal already produced (`ManifestObservation`), never re-open arbitrary paths.
+2. Handle JSON, TOML, YAML, and XML manifests with a bounded parser and no new heavyweight dependency unless measured necessary.
+3. Return `INVALID` parser state for malformed content instead of throwing.
+4. Map parsed fields to declarative detector output: ecosystem, primary language, framework/technology signals, and workspace declarations.
+5. Keep detection rules pure in `@lpi/core`; parsing adapters may live in the agent.
+6. Add malformed, empty, wrong-typed, and truncated-manifest fixtures.
+7. Keep the 256 KiB read bound and add a parse-time budget.
+
+Concretely: `package.json`, `pyproject.toml`, `requirements.txt`, `Pipfile`, `setup.py`, `Cargo.toml`, `go.mod`, `pubspec.yaml`, `pom.xml`, `build.gradle`/`.kts`, `*.csproj`, `*.sln`, `composer.json`, and `Gemfile`.
 
 Do not begin Phase 2 until Phase 1 acceptance is verified.
