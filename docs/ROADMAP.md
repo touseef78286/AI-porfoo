@@ -10,11 +10,11 @@ Last updated: 2026-11-04
 | Phase 0 architecture and documentation | IMPLEMENTED (this document set) |
 | Phase 0 repository scaffold | IMPLEMENTED (metadata and docs only) |
 | Engineering playbook | IMPLEMENTED (`docs/ENGINEERING_PLAYBOOK.md`) |
-| Phase 1 implementation | IN PROGRESS — Gates 1–3 complete |
+| Phase 1 implementation | IN PROGRESS — Gates 1–4 complete |
 | Dependencies installed | MINIMAL PINNED TOOLCHAIN (92 packages) |
-| Application code | SCAFFOLD + DATABASE LAYER |
-| Tests executed | 26 TESTS PASSING (5 files) |
-| Git repository | INITIALIZED (`main`, 1 commit at Gate 2) |
+| Application code | DATABASE LAYER + ROOT/EXCLUSION POLICY |
+| Tests executed | 102 TESTS PASSING (11 files) |
+| Git repository | INITIALIZED (`main`, 3 commits) |
 | Public portfolio | NOT STARTED |
 
 Phase 0 is complete and confirmed by the user. The workspace remains in a controlled pre-implementation state until Phase 1 is explicitly authorized.
@@ -92,9 +92,26 @@ Goal: discover real projects inside explicitly authorized roots and persist a tr
 - 25 database tests added; 26 tests pass across 5 files.
 - No runtime database file exists yet: nothing writes one until scan orchestration lands in Gate 6.
 
+**Gate 4 — root safety and exclusions (COMPLETE).**
+
+- Pure domain rules in `@lpi/core` (no filesystem, database, or HTTP imports):
+  - `roots/path-rules.ts`: separator normalization, comparison keys, absolute/drive-root/UNC detection, `..` traversal detection.
+  - `roots/deny-rules.ts`: rejects UNC paths, drive roots, `C:\Windows`, `C:\Program Files`, `C:\ProgramData`, recycle/system-volume/recovery locations, the user profile root, `AppData`, and credential stores (`.ssh`, `.aws`, `.gnupg`, `.kube`, `.docker`, `secrets`, `credentials`, `.git-credentials`).
+  - `roots/exclusions.ts`: the approved default ignore set, a case-insensitive `*`/`**`/`?` glob compiler, and a matcher that always evaluates system rules first and cannot be downgraded by a user rule.
+  - `roots/sensitive-files.ts`: deny-before-read policy for `.env*`, `.npmrc`, `.netrc`, `.git-credentials`, `.pgpass`, SSH private keys, `credentials*`/`secrets*`, and `.pem`/`.key`/`.pfx`/`.p12`/`.jks`/`.kdbx`/`.gpg`/`.ppk` extensions, plus sensitive directories.
+- Filesystem adapter in `apps/agent/src/roots/validate-root.ts`:
+  - String rules run before any filesystem access, so denied locations are never probed.
+  - Requires an existing absolute directory; rejects non-directories.
+  - `lstat` first: a symbolic link or junction is rejected as a root with `REPARSE_ROOT` instead of being followed.
+  - Canonicalizes with `realpathSync.native` and re-applies denial rules to the resolved path.
+  - Stores the lowercase canonical comparison path while preserving the user's `displayPath`.
+- Repositories over migration 0001: `root-repository.ts` (`insertRoot`, `findRootByCanonicalPath`, `listRoots`, `updateRootStatus`) and `exclusion-repository.ts` (`addExclusion`, `listExclusions`, `deleteUserExclusion`, `loadExclusionRulesForRoot`); system exclusions cannot be deleted.
+- 76 tests added; 102 tests pass across 11 files. The NTFS junction test executed on this machine (not skipped).
+- Still absent: traversal itself, scan orchestration, API, and any runtime database file.
+
 ### Remaining work
 
-Gates 4–8 below remain outstanding.
+Gates 5–8 below remain outstanding.
 
 ### Planned implementation
 
@@ -233,14 +250,16 @@ Acceptance: complete system works reliably on the measured hardware and all secu
 
 ## Exact next engineering task
 
-**Phase 1 — Discovery foundation, only when explicitly authorized.**
+**Phase 1 Gate 5 — bounded manifest-only traversal. Only when explicitly authorized.**
 
-When authorized:
+Gate 4 is complete and verified. Gate 5 must:
 
-1. Initialize Git.
-2. Create the npm workspace packages.
-3. Install the minimal Phase 1 toolchain.
-4. Implement migrations and the SQLite adapter.
-5. Begin with root validation and fixture-root scanning.
+1. Enumerate authorized roots from `project_roots` where `status = 'ACTIVE'`.
+2. Evaluate system and user exclusions before descending into a directory, using `createExclusionMatcher` and `loadExclusionRulesForRoot`.
+3. Skip and record reparse points instead of following them.
+4. Read only allowlisted, size-bounded manifests, and only after `checkManifestRead` returns `allowed: true`.
+5. Apply bounded concurrency, depth, and per-run budgets with explicit `LIMIT_EXCEEDED`.
+6. Record permission errors without aborting the scan.
+7. Add traversal and path-escape integration tests against generated fixtures under `.cache/test-tmp`.
 
 Do not begin Phase 2 until Phase 1 acceptance is verified.

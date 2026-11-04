@@ -4,16 +4,16 @@ A local-first project intelligence platform for Windows development machines. It
 
 ## Current status
 
-**Phase 1 — discovery foundation, in progress (Gates 1–3 complete).**
+**Phase 1 — discovery foundation, in progress (Gates 1–4 complete).**
 
-Phase 0 is complete and confirmed. The workspace now contains the pinned toolchain, workspace packages, and a tested SQLite database layer, but there is **still no working product**:
+Phase 0 is complete and confirmed. The workspace now contains the pinned toolchain, workspace packages, a tested SQLite database layer, and the root/exclusion safety policy, but there is **still no working product**:
 
-- No scanner implementation.
+- No traversal/scanner implementation.
 - No local API.
 - No dashboard.
 - No public portfolio.
 - No runtime database file yet.
-- Database adapter, migration 0001, and backup/restore are implemented and covered by 26 passing tests.
+- Database adapter, migration 0001, backup/restore, root validation, exclusion matching, and sensitive-file denial are implemented and covered by 102 passing tests.
 
 Phase 1 implementation continues only on explicit authorization.
 

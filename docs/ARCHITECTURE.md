@@ -5,13 +5,15 @@ Last updated: 2026-11-04
 
 ## 1. Implemented reality
 
-As of Gate 3 of Phase 1:
+As of Gate 4 of Phase 1:
 
-- The repository contains documentation, root metadata, configuration, two workspace manifests, scaffold source files, and a database layer.
-- `@lpi/core` exports one identity constant; `@lpi/agent` exports an identity constant plus the SQLite adapter, migration runner, migration 0001, and backup/restore helpers.
-- A pinned development toolchain is installed and verified: type check and 26 tests pass.
+- The repository contains documentation, root metadata, configuration, two workspace manifests, scaffold files, a database layer, and the root/exclusion safety policy.
+- `@lpi/core` exports identity constants plus pure path, deny, exclusion, glob, and sensitive-file rules. It imports no filesystem, database, or HTTP module.
+- `@lpi/agent` exports an identity constant, the SQLite adapter, migration runner, migration 0001, backup/restore helpers, the filesystem root validator, and root/exclusion repositories.
+- A pinned development toolchain is installed and verified: type check and 102 tests pass.
 - Migration 0001 defines the Phase 1 discovery tables and is verified against in-memory and temporary file databases.
-- No runtime database file exists, no API exists, no scanner exists, no watcher exists.
+- Root validation canonicalizes real directories, rejects drive roots, system/credential locations, UNC paths, traversal segments, and reparse-point roots; exclusions are enforced by a core matcher and persisted per root.
+- No runtime database file exists, no API exists, no scanner or traversal exists, no watcher exists.
 - No application entry point starts a process and no public portfolio exists.
 
 Everything below describes the approved target architecture for upcoming phases. It must not be presented as implemented until code and verification exist.

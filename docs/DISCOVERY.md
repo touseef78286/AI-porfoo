@@ -40,6 +40,8 @@ Removing a root:
 - Preserves project history.
 - Does not delete projects automatically.
 
+Implementation status (Gate 4): validation for the first five bullets exists in `apps/agent/src/roots/validate-root.ts` and is tested. Repository persistence exists. Watcher preference, removal flow, and the confirmation UI do not exist yet.
+
 ## 4. Traversal policy
 
 Default traversal:
@@ -63,6 +65,8 @@ Default traversal:
 - IDE/editor internals where safe to skip: `.idea`, `.vscode` (config may be considered later, not for Phase 1 detection).
 
 Built-in ignore rules are system exclusions. A user may add exclusions but cannot silently disable safety rules.
+
+Implementation status (Gate 4): the set above is implemented as `DEFAULT_IGNORED_DIRECTORY_NAMES` in `packages/core/src/roots/exclusions.ts`. `createExclusionMatcher` evaluates system rules first, so an equivalent user rule cannot downgrade them. The matcher is unit-tested; traversal does not call it yet.
 
 ## 5. File reads
 

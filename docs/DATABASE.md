@@ -445,3 +445,26 @@ Known limitations:
 - `VACUUM INTO` requires the target file to be absent; callers must generate unique backup names.
 - No runtime database file is created yet. Tests use in-memory databases and workspace temp files under `.cache/test-tmp`.
 - Schema foreign keys are enforced at connection level; any future connection bypassing `openDatabase` would lose that guarantee.
+
+### Gate 4 repositories
+
+Added in `apps/agent/src/db/repositories/`:
+
+| Repository | Functions | Tables |
+|---|---|---|
+| `root-repository.ts` | `insertRoot`, `findRootByCanonicalPath`, `listRoots`, `updateRootStatus` | `project_roots` |
+| `exclusion-repository.ts` | `addExclusion`, `listExclusions`, `deleteUserExclusion`, `loadExclusionRulesForRoot` | `exclusions` |
+
+Verified behavior:
+
+| Check | Result |
+|---|---|
+| Insert and read a root by canonical path | PASS |
+| Duplicate canonical path rejected by unique index | PASS |
+| Root listing ordered by canonical path | PASS |
+| Status/last-error update | PASS |
+| Global and root-scoped exclusions | PASS |
+| System exclusion cannot be deleted | PASS |
+| Invalid exclusion kind rejected by CHECK | PASS |
+
+`deleteUserExclusion` is a soft safety guarantee in SQL (`is_system = 0`); there is no API or UI that mutates exclusions yet.

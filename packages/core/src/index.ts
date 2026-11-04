@@ -5,3 +5,5 @@
  * This package must stay pure: no filesystem, database, HTTP, or UI imports.
  */
 export const CORE_PACKAGE_NAME = "@lpi/core" as const;
+
+export * from "./roots/index.js";

@@ -105,6 +105,8 @@ A root is accepted only after:
 6. The user explicitly confirms it.
 7. It is persisted with an audit timestamp.
 
+Implementation status (Gate 4, `VERIFIED` by tests): `apps/agent/src/roots/validate-root.ts` enforces items 1–4 on both the supplied and the resolved path, and rejects *any* symbolic link or junction as a root (`REPARSE_ROOT`), which is stricter than item 5. `@lpi/core` deny rules reject drive roots, UNC paths, system directories, the user profile root, `AppData`, and credential stores. Items 6–7 are API/UI work and do not exist yet.
+
 ### 5.2 Traversal
 
 - Never follow symbolic links, junctions, mount points, or other reparse points by default.
@@ -128,6 +130,8 @@ Deny before opening, at minimum:
 - `.git` object internals, not the repository metadata needed for discovery.
 
 Only a narrow allowlist of manifest/config filenames is read. The deny list is defense in depth, not the primary boundary.
+
+Implementation status (Gate 4): the name, extension, and directory rules are implemented in `packages/core/src/roots/sensitive-files.ts` and exposed as `checkManifestRead`. They are unit-tested but not yet called by a reader, because traversal does not exist. `.env.example` is currently denied as well.
 
 ### 5.4 Bounded reads
 
