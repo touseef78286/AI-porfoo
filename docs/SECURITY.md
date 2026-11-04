@@ -105,7 +105,7 @@ A root is accepted only after:
 6. The user explicitly confirms it.
 7. It is persisted with an audit timestamp.
 
-Implementation status (Gate 4, `VERIFIED` by tests): `apps/agent/src/roots/validate-root.ts` enforces items 1–4 on both the supplied and the resolved path, and rejects *any* symbolic link or junction as a root (`REPARSE_ROOT`), which is stricter than item 5. `@lpi/core` deny rules reject drive roots, UNC paths, system directories, the user profile root, `AppData`, and credential stores. Items 6–7 are API/UI work and do not exist yet.
+Implementation status (Gate 4, `VERIFIED` by tests): `apps/agent/src/roots/validate-root.ts` enforces items 1–4 on both the supplied and the resolved path, and rejects *any* symbolic link or junction as a root (`REPARSE_ROOT`), which is stricter than item 5. `@lpi/core` deny rules reject drive roots, UNC paths, system directories, the user profile root, `AppData`, and credential stores; the agent adapter additionally denies the machine's environment-derived system locations and profile root, so the policy is not tied to `C:`. Items 6–7 are API/UI work and do not exist yet.
 
 ### 5.2 Traversal
 

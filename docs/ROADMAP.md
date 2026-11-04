@@ -13,7 +13,7 @@ Last updated: 2026-11-04
 | Phase 1 implementation | IN PROGRESS — Gates 1–4 complete |
 | Dependencies installed | MINIMAL PINNED TOOLCHAIN (92 packages) |
 | Application code | DATABASE LAYER + ROOT/EXCLUSION POLICY |
-| Tests executed | 102 TESTS PASSING (11 files) |
+| Tests executed | 105 tests PASSING (11 files) |
 | Git repository | INITIALIZED (`main`, 3 commits) |
 | Public portfolio | NOT STARTED |
 
@@ -104,9 +104,10 @@ Goal: discover real projects inside explicitly authorized roots and persist a tr
   - Requires an existing absolute directory; rejects non-directories.
   - `lstat` first: a symbolic link or junction is rejected as a root with `REPARSE_ROOT` instead of being followed.
   - Canonicalizes with `realpathSync.native` and re-applies denial rules to the resolved path.
+  - Also denies the machine's real system locations from the environment (`SystemRoot`, `windir`, `ProgramFiles`, `ProgramFiles(x86)`, `ProgramData`) and the profile root itself, so the policy holds when Windows or the profile is not on `C:`. Project folders inside a profile remain authorizable.
   - Stores the lowercase canonical comparison path while preserving the user's `displayPath`.
 - Repositories over migration 0001: `root-repository.ts` (`insertRoot`, `findRootByCanonicalPath`, `listRoots`, `updateRootStatus`) and `exclusion-repository.ts` (`addExclusion`, `listExclusions`, `deleteUserExclusion`, `loadExclusionRulesForRoot`); system exclusions cannot be deleted.
-- 76 tests added; 102 tests pass across 11 files. The NTFS junction test executed on this machine (not skipped).
+- 76 tests added; 105 tests pass across 11 files. The NTFS junction test executed on this machine (not skipped).
 - Still absent: traversal itself, scan orchestration, API, and any runtime database file.
 
 ### Remaining work

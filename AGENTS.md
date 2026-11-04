@@ -194,7 +194,7 @@ End every development session with:
 - Engineering playbook: `docs/ENGINEERING_PLAYBOOK.md` is implemented.
 - Phase 1 is in progress: Gates 1–4 are complete (temporary storage verified, workspace packages and pinned toolchain installed, SQLite adapter/migration/backup layer implemented, root validation and exclusion policy implemented).
 - Application code covers the database layer, root/exclusion repositories, and the pure path-safety rules; traversal, detection, identity rules, and API do not exist yet.
-- `npm run typecheck`, `npm test` (102 tests), and `npm run verify` pass.
+- `npm run typecheck`, `npm test` (105 tests), and `npm run verify` pass.
 - Git repository initialized on `main`; commits `0c73a2e` (Gate 2), `a74a54b` (Gate 3), and the Gate 4 commit hold verified states.
 - No runtime database file, scanner, API, watcher, or UI exists yet.
 - Remaining Phase 1 gates require explicit continuation.

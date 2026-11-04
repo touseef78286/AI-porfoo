@@ -257,11 +257,12 @@ Executed on 2026-11-04 with Vitest 5.1.0, 2 workers; full suite 18.72 s, `npm ru
 | Check | Result |
 |---|---|
 | `npm run typecheck` | PASS: exit 0 |
-| `npm test` | PASS: 11 files, 102 tests |
+| `npm test` | PASS: 11 files, 105 tests |
 | `npm run verify` | PASS: exit 0, Phase 0 documentation check included |
 | Drive root rejection (`C:\`, `T:\`, `C:/`, `c:`) | PASS: `DRIVE_ROOT` |
 | UNC path rejection | PASS: `UNC_PATH` |
 | System directory rejection (`C:\Windows`, `Program Files`, `ProgramData`) | PASS: `SYSTEM_DIRECTORY` |
+| Environment-derived system roots (`SystemRoot`, `windir`, `ProgramFiles`, `ProgramData`) | PASS: root and descendants rejected |
 | User profile root rejection | PASS: `USER_PROFILE_ROOT` |
 | `AppData` and credential-store rejection | PASS: `CREDENTIAL_STORE` |
 | Repository/dependency internals as root (`.git`, `node_modules`) | PASS: `IGNORED_DIRECTORY` |
@@ -270,6 +271,7 @@ Executed on 2026-11-04 with Vitest 5.1.0, 2 workers; full suite 18.72 s, `npm ru
 | Empty / relative / nonexistent / file input rejected | PASS: `EMPTY`, `NOT_ABSOLUTE`, `NOT_FOUND`, `NOT_DIRECTORY` |
 | `..` traversal segment rejected before filesystem access | PASS: `TRAVERSAL` |
 | NTFS junction rejected as a root and detected as a reparse point | PASS: executed, not skipped |
+| Profile root equality denied; project folder inside a profile allowed | PASS |
 | Default ignore set applied at any depth | PASS |
 | User `DIRECTORY` / `PATH` / `GLOB` rules | PASS |
 | System rule precedence over an equivalent user rule | PASS |
@@ -291,7 +293,7 @@ Two defects were found and fixed during this gate rather than worked around:
 - Windows Developer Mode is not enabled and Git `core.longpaths` is not configured; long-path behavior must be measured, not assumed.
 - `node:sqlite` is experimental; backup/restore must be explicitly tested.
 - No Git repository was initialized during the audit; history starts after Phase 0 setup.
-- Automated test execution is available as of Gate 2 (Vitest). As of Gate 4, 102 tests cover the database layer, root/exclusion policy, and sensitive-file denial. Traversal, detection, identity, and API behavior remain untested because they do not exist.
+- Automated test execution is available as of Gate 2 (Vitest). As of Gate 4, 105 tests cover the database layer, root/exclusion policy, and sensitive-file denial. Traversal, detection, identity, and API behavior remain untested because they do not exist.
 
 ## 12. Definition of verified
 

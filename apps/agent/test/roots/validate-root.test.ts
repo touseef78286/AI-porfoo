@@ -2,7 +2,7 @@ import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { isReparsePoint, validateRootPath } from "../../src/roots/validate-root.js";
+import { isReparsePoint, findEnvironmentDenial, validateRootPath } from "../../src/roots/validate-root.js";
 import { createWorkspaceTempDir, removeWorkspaceTempDir } from "../helpers/workspace-temp.js";
 
 const tempDirectories: string[] = [];
@@ -143,5 +143,35 @@ describe("validateRootPath", () => {
     expect(isReparsePoint(junction)).toBe(true);
     expect(isReparsePoint(target)).toBe(false);
     expect(validateRootPath(junction)).toMatchObject({ ok: false, code: "REPARSE_ROOT" });
+  });
+});
+
+describe("findEnvironmentDenial", () => {
+  it("denies the machine's real system root and everything under it", () => {
+    const systemRoot = process.env.SystemRoot ?? process.env.windir;
+
+    if (systemRoot === undefined) {
+      throw new Error("Neither SystemRoot nor windir is set on this machine");
+    }
+
+    expect(findEnvironmentDenial(systemRoot)).toMatchObject({ code: "SYSTEM_DIRECTORY" });
+    expect(findEnvironmentDenial(join(systemRoot, "System32"))).toMatchObject({
+      code: "SYSTEM_DIRECTORY",
+    });
+  });
+
+  it("denies the profile root but not projects inside the profile", () => {
+    const profile = process.env.USERPROFILE;
+
+    if (profile === undefined) {
+      throw new Error("USERPROFILE is not set on this machine");
+    }
+
+    expect(findEnvironmentDenial(profile)).toMatchObject({ code: "USER_PROFILE_ROOT" });
+    expect(findEnvironmentDenial(join(profile, "Documents", "projects", "app"))).toBeNull();
+  });
+
+  it("allows an ordinary workspace path", () => {
+    expect(findEnvironmentDenial(process.cwd())).toBeNull();
   });
 });

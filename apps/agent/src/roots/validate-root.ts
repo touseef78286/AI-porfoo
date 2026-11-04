@@ -1,5 +1,6 @@
-import { lstatSync, realpathSync, statSync } from "node:fs";
+import { lstatSync, realpathSync } from "node:fs";
 import type { Stats } from "node:fs";
+import { homedir } from "node:os";
 
 import {
   findPathDenial,
@@ -7,7 +8,62 @@ import {
   isAbsoluteWindowsPath,
   toComparisonPath,
 } from "@lpi/core";
-import type { PathDenialCode } from "@lpi/core";
+import type { PathDenial, PathDenialCode } from "@lpi/core";
+
+/** System locations whose entire subtree is denied, resolved from the environment. */
+const DENIED_SYSTEM_ENVIRONMENT_VARIABLES = [
+  "SystemRoot",
+  "windir",
+  "ProgramFiles",
+  "ProgramFiles(x86)",
+  "ProgramData",
+] as const;
+
+/**
+ * Denies locations using the machine's real environment instead of only the
+ * literal `C:` prefixes in the pure rules. This keeps the policy correct when
+ * Windows, or the user profile, lives on another drive.
+ *
+ * Only the profile root itself is denied: ordinary project folders inside a
+ * profile (for example `Documents\projects`) must remain authorizable.
+ */
+export function findEnvironmentDenial(path: string): PathDenial | null {
+  const comparison = toComparisonPath(path);
+
+  for (const variable of DENIED_SYSTEM_ENVIRONMENT_VARIABLES) {
+    const value = process.env[variable];
+
+    if (value === undefined || value.trim().length === 0) {
+      continue;
+    }
+
+    const denied = toComparisonPath(value);
+
+    if (comparison === denied || comparison.startsWith(`${denied}\\`)) {
+      return {
+        code: "SYSTEM_DIRECTORY",
+        message: `Windows system location cannot be an authorized root: ${variable}`,
+      };
+    }
+  }
+
+  const profileRoots = [process.env.USERPROFILE, homedir()];
+
+  for (const profile of profileRoots) {
+    if (profile === undefined || profile.trim().length === 0) {
+      continue;
+    }
+
+    if (comparison === toComparisonPath(profile)) {
+      return {
+        code: "USER_PROFILE_ROOT",
+        message: "A user profile root cannot be an authorized root",
+      };
+    }
+  }
+
+  return null;
+}
 
 export type RootValidationCode =
   | "EMPTY"
@@ -77,7 +133,7 @@ export function validateRootPath(input: string): RootValidationResult {
     return failure("TRAVERSAL", "Root path must not contain '..' segments");
   }
 
-  const denial = findPathDenial(normalized);
+  const denial = findPathDenial(normalized) ?? findEnvironmentDenial(normalized);
 
   if (denial !== null) {
     return failure(denial.code, denial.message);
@@ -114,7 +170,8 @@ export function validateRootPath(input: string): RootValidationResult {
     return failure("NOT_DIRECTORY", "Root path must be a directory");
   }
 
-  const canonicalDenial = findPathDenial(canonicalPath);
+  const canonicalDenial =
+    findPathDenial(canonicalPath) ?? findEnvironmentDenial(canonicalPath);
 
   if (canonicalDenial !== null) {
     return failure(canonicalDenial.code, canonicalDenial.message);
