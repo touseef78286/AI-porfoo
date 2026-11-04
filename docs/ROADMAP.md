@@ -10,11 +10,11 @@ Last updated: 2026-11-04
 | Phase 0 architecture and documentation | IMPLEMENTED (this document set) |
 | Phase 0 repository scaffold | IMPLEMENTED (metadata and docs only) |
 | Engineering playbook | IMPLEMENTED (`docs/ENGINEERING_PLAYBOOK.md`) |
-| Phase 1 implementation | IN PROGRESS — Gates 1–2 complete |
+| Phase 1 implementation | IN PROGRESS — Gates 1–3 complete |
 | Dependencies installed | MINIMAL PINNED TOOLCHAIN (92 packages) |
-| Application code | SCAFFOLD ONLY |
-| Tests executed | 1 SMOKE TEST PASSING |
-| Git repository | NOT INITIALIZED |
+| Application code | SCAFFOLD + DATABASE LAYER |
+| Tests executed | 26 TESTS PASSING (5 files) |
+| Git repository | INITIALIZED (`main`, 1 commit at Gate 2) |
 | Public portfolio | NOT STARTED |
 
 Phase 0 is complete and confirmed by the user. The workspace remains in a controlled pre-implementation state until Phase 1 is explicitly authorized.
@@ -82,9 +82,19 @@ Goal: discover real projects inside explicitly authorized roots and persist a tr
 - Source code remains scaffold only: two identity constants and one smoke test.
 - Build command intentionally deferred: no compiled artifact exists yet, and Phase 1 runs TypeScript through `tsx`/Vitest.
 
+**Gate 3 — database foundation (COMPLETE).**
+
+- `node:sqlite` adapter in `apps/agent/src/db/connection.ts` applies `journal_mode=WAL`, `foreign_keys=ON`, `busy_timeout=5000`, and `synchronous=NORMAL`.
+- Migration runner in `apps/agent/src/db/migration-runner.ts`: contiguous `NNNN_name.sql` files, SHA-256 checksums, one transaction per migration, rollback on failure, rejection of edited or missing migrations.
+- `0001_discovery_schema.sql` creates the 12 Phase 1 tables plus `schema_migrations`.
+- Deferred by design to later migrations: `relationships`, `publication_records`, `publication_snapshots`, `agent_settings`.
+- Backup uses `VACUUM INTO`; restore copies to a new file and verifies `integrity_check`; overwriting an existing backup or database is refused.
+- 25 database tests added; 26 tests pass across 5 files.
+- No runtime database file exists yet: nothing writes one until scan orchestration lands in Gate 6.
+
 ### Remaining work
 
-Gates 3–8 below remain outstanding.
+Gates 4–8 below remain outstanding.
 
 ### Planned implementation
 

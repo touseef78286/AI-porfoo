@@ -225,6 +225,31 @@ Avoid concurrent heavy processes during measurement. Record the methodology and 
 | `npm run verify` | PASS: exit 0 |
 | `npm run build` | NOT DEFINED: no compiled artifact in Phase 1 |
 
+### Phase 1 — Gate 3 executed checks
+
+Executed on 2026-11-04 with Vitest 5.1.0, 2 workers, 12.07 s and 11.55 s runs.
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` | PASS: exit 0 |
+| `npm test` | PASS: 5 files, 26 tests |
+| `npm run verify` | PASS: exit 0, Phase 0 documentation check included |
+| Migration from empty database | PASS |
+| Idempotent re-apply | PASS |
+| Checksum tampering rejected | PASS |
+| Missing-migration detection | PASS |
+| Failing migration rollback | PASS |
+| WAL / foreign keys / busy timeout | PASS |
+| Foreign key violation rejected | PASS |
+| Transaction rollback | PASS |
+| Duplicate project path rejected | PASS |
+| CHECK constraint enforcement | PASS |
+| `VACUUM INTO` backup | PASS |
+| Restore integrity and row parity | PASS |
+| Backup/restore overwrite protection | PASS |
+| Sensitive-column scan of all tables | PASS |
+| Test artifact cleanup | VERIFIED: `.cache/test-tmp` empty, zero stray `.db` files |
+
 ## 11. Known test limitations
 
 - The machine has low free RAM; test concurrency must remain bounded.
@@ -232,7 +257,7 @@ Avoid concurrent heavy processes during measurement. Record the methodology and 
 - Windows Developer Mode is not enabled and Git `core.longpaths` is not configured; long-path behavior must be measured, not assumed.
 - `node:sqlite` is experimental; backup/restore must be explicitly tested.
 - No Git repository was initialized during the audit; history starts after Phase 0 setup.
-- Automated test execution is available as of Gate 2 (Vitest), but only one scaffold smoke test exists. Coverage of product behavior is still absent.
+- Automated test execution is available as of Gate 2 (Vitest). As of Gate 3, 26 tests cover the database layer and the scaffold; product behavior (discovery, identity, API) is still untested because it does not exist.
 
 ## 12. Definition of verified
 

@@ -192,9 +192,10 @@ End every development session with:
 
 - Phase 0 is complete and confirmed by the user.
 - Engineering playbook: `docs/ENGINEERING_PLAYBOOK.md` is implemented.
-- Phase 1 is in progress: Gates 1 and 2 are complete (temporary storage verified, workspace packages created, pinned toolchain installed).
-- Application code is scaffold only: two identity constants and one smoke test.
-- `npm run typecheck`, `npm test`, and `npm run verify` pass.
-- No database, migrations, scanner, API, watcher, or UI exists yet.
+- Phase 1 is in progress: Gates 1–3 are complete (temporary storage verified, workspace packages and pinned toolchain installed, SQLite adapter/migration/backup layer implemented).
+- Application code covers the database layer plus two identity constants; discovery, identity rules, and API do not exist yet.
+- `npm run typecheck`, `npm test` (26 tests), and `npm run verify` pass.
+- Git repository initialized on `main`; commit `0c73a2e` holds the verified Gate 2 state.
+- No runtime database file, scanner, API, watcher, or UI exists yet.
 - Remaining Phase 1 gates require explicit continuation.
-- Do not treat the installed toolchain as working product behavior.
+- Do not treat the database layer as a working product feature.

@@ -1,6 +1,6 @@
 # Database Design
 
-Status: **Target schema. No database or migration exists yet.**
+Status: **Phase 1 migration 0001 implemented and tested for the discovery tables. Later tables are not created yet.**
 Last updated: 2026-11-04
 
 ## 1. Storage decision
@@ -355,7 +355,7 @@ Settings must be schema-validated. Secrets are not stored here.
 
 ## 6. Migrations
 
-Location (planned): `apps/agent/src/db/migrations/NNNN_name.sql`.
+Location (implemented): `apps/agent/src/db/migrations/NNNN_name.sql`.
 
 Rules:
 
@@ -402,3 +402,46 @@ Phase 1 must verify:
 - No sensitive fixture value appears in any table.
 
 No schema claim in this document should be treated as implemented until those checks exist.
+
+## 11. Implementation status — Phase 1 Gate 3
+
+Implemented in `apps/agent/src/db/`:
+
+| Component | File | Behavior |
+|---|---|---|
+| Connection adapter | `connection.ts` | Opens `DatabaseSync`, applies the four approved pragmas, creates the parent directory, exposes `withTransaction` |
+| Migration runner | `migration-runner.ts` | Loads contiguous migrations, verifies SHA-256 checksums, applies each in a transaction, rolls back failures, rejects edited or absent migrations |
+| Migration 0001 | `migrations/0001_discovery_schema.sql` | Creates the Phase 1 discovery tables |
+| Backup/restore | `backup.ts` | `VACUUM INTO` snapshot, integrity inspection, restore into a new file, refuses overwrites |
+
+Tables created by migration 0001: `project_roots`, `projects`, `project_identities`, `detection_evidence`, `technologies`, `project_technologies`, `dependencies`, `scan_runs`, `scan_errors`, `exclusions`, `project_overrides`, `project_status_history`, plus `schema_migrations` managed by the runner.
+
+Deferred by design (not yet created): `relationships` (Phase 3), `publication_records` and `publication_snapshots` (Phase 5), `agent_settings` (when runtime settings exist).
+
+Verified behavior:
+
+| Check | Result |
+|---|---|
+| Migration applies from an empty database | PASS |
+| Second apply is a no-op | PASS |
+| Edited applied migration is rejected | PASS |
+| Failing migration rolls back completely | PASS |
+| Contiguous-version validation | PASS |
+| WAL active for file databases | PASS |
+| Foreign keys enforced | PASS |
+| Busy timeout is 5000 ms | PASS |
+| Transaction rollback discards writes | PASS |
+| Duplicate project paths rejected | PASS |
+| Invalid enum/CHECK values rejected | PASS |
+| `PRAGMA foreign_key_check` clean | PASS |
+| `VACUUM INTO` backup is consistent | PASS |
+| Restore verifies integrity and preserves rows | PASS |
+| Backup/restore overwrite refused | PASS |
+| No column can hold secrets or raw source content | PASS (enumerated column names) |
+
+Known limitations:
+
+- `node:sqlite` is experimental on Node 24.11.0 and emits `ExperimentalWarning`; the adapter isolates it.
+- `VACUUM INTO` requires the target file to be absent; callers must generate unique backup names.
+- No runtime database file is created yet. Tests use in-memory databases and workspace temp files under `.cache/test-tmp`.
+- Schema foreign keys are enforced at connection level; any future connection bypassing `openDatabase` would lose that guarantee.

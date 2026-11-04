@@ -5,14 +5,14 @@ Last updated: 2026-11-04
 
 ## 1. Implemented reality
 
-As of Gate 2 of Phase 1:
+As of Gate 3 of Phase 1:
 
-- The repository contains documentation, root metadata, configuration, two workspace manifests, and scaffold source files.
-- `@lpi/core` exports one identity constant; `@lpi/agent` exports one identity constant. Neither has behavior.
-- A pinned development toolchain is installed and verified: type check and one smoke test pass.
-- No database exists, no migrations exist, no API exists, no watcher exists.
-- No process is runnable and no application entry point starts a server.
-- No public portfolio exists.
+- The repository contains documentation, root metadata, configuration, two workspace manifests, scaffold source files, and a database layer.
+- `@lpi/core` exports one identity constant; `@lpi/agent` exports an identity constant plus the SQLite adapter, migration runner, migration 0001, and backup/restore helpers.
+- A pinned development toolchain is installed and verified: type check and 26 tests pass.
+- Migration 0001 defines the Phase 1 discovery tables and is verified against in-memory and temporary file databases.
+- No runtime database file exists, no API exists, no scanner exists, no watcher exists.
+- No application entry point starts a process and no public portfolio exists.
 
 Everything below describes the approved target architecture for upcoming phases. It must not be presented as implemented until code and verification exist.
 
