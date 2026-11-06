@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Local Project Intelligence — Console</title>
+<meta name="description" content="Local-first project discovery, intelligence, and publication console." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #08080b;
+    --bg-2: #0c0c12;
+    --surface: rgba(255, 255, 255, 0.028);
+    --surface-2: rgba(255, 255, 255, 0.05);
+    --border: rgba(255, 255, 255, 0.075);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --fg: #f5f5f7;
+    --fg-dim: #b9b9c6;
+    --muted: #7c7c8c;
+    --violet: #8b5cf6;
+    --cyan: #22d3ee;
+    --lime: #b8ff3d;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #fb7185;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.8);
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100vh;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* Ambient gradient mesh */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+    background:
+      radial-gradient(900px 600px at 10% -10%, rgba(139, 92, 246, 0.16), transparent 60%),
+      radial-gradient(800px 600px at 100% 0%, rgba(34, 211, 238, 0.10), transparent 55%),
+      radial-gradient(1000px 700px at 50% 120%, rgba(184, 255, 61, 0.06), transparent 60%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  }
+
+  /* Fine grid texture */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 30%, transparent 85%);
+    -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 30%, transparent 85%);
+  }
+
+  /* Linked particle constellation (canvas) */
+  #particles {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 1;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+  /* ============ TOP BAR ============ */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    background: rgba(8, 8, 11, 0.62);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    height: 68px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--violet), var(--cyan));
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 15px;
+    color: #06060a;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 8px 24px -8px rgba(139,92,246,0.7);
+  }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+  .brand-name { font-weight: 700; font-size: 14.5px; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.04em; }
+
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--fg-dim);
+    font-family: var(--mono);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .status-pill.online .dot { background: var(--green); box-shadow: 0 0 0 4px rgba(52,211,153,0.14); }
+  .status-pill.offline .dot { background: var(--red); box-shadow: 0 0 0 4px rgba(251,113,133,0.14); }
+  .status-pill.checking .dot { background: var(--amber); animation: pulse 1.3s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  .ghost-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--fg-dim);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all .18s ease;
+  }
+  .ghost-btn:hover { background: var(--surface-2); color: var(--fg); border-color: rgba(255,255,255,0.22); transform: translateY(-1px); }
+
+  /* ============ HERO ============ */
+  .hero { padding: 64px 0 40px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 22px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 26px; height: 1px;
+    background: linear-gradient(90deg, var(--violet), transparent);
+  }
+  .eyebrow .tag {
+    color: var(--lime);
+    border: 1px solid rgba(184,255,61,0.28);
+    background: rgba(184,255,61,0.08);
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+  }
+  h1.title {
+    font-size: clamp(38px, 6.4vw, 72px);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    font-weight: 800;
+    margin-bottom: 20px;
+  }
+  h1.title .grad {
+    background: linear-gradient(115deg, #ffffff 0%, #cfc9ff 34%, var(--cyan) 68%, var(--lime) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .lede {
+    max-width: 620px;
+    color: var(--fg-dim);
+    font-size: 16.5px;
+    line-height: 1.6;
+  }
+  .lede strong { color: var(--fg); font-weight: 600; }
+
+  /* ============ STATS ============ */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin: 40px 0 10px;
+  }
+  .stat {
+    position: relative;
+    padding: 20px 20px 18px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+    transition: all .22s ease;
+  }
+  .stat::before {
+    content: "";
+    position: absolute;
+    inset: -50% 35% 45% -50%;
+    background: radial-gradient(closest-side, rgba(139, 92, 246, 0.22), transparent);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+  }
+  .stat::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+  }
+  .stat:hover { transform: translateY(-3px); border-color: var(--border-strong); background: var(--surface-2); }
+  .stat:hover::before { opacity: 1; }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .stat-label i { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .stat-value {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .stat-value.pending { color: var(--amber); }
+  .stat-value.approved { color: var(--green); }
+  .stat-value.snapshot { color: var(--violet); }
+  .stat-foot { margin-top: 9px; font-size: 11.5px; color: var(--muted); }
+
+  /* ============ TOOLBAR ============ */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin: 40px 0 26px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .toolbar-title { display: flex; align-items: baseline; gap: 12px; }
+  .toolbar-title h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+  .toolbar-title span { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+  .segmented {
+    display: inline-flex;
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    gap: 2px;
+    flex-wrap: wrap;
+  }
+  .segmented button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 7px 13px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all .16s ease;
+    white-space: nowrap;
+  }
+  .segmented button:hover { color: var(--fg-dim); background: var(--surface-2); }
+  .segmented button:active { transform: scale(0.96); }
+  .segmented button.active {
+    color: var(--fg);
+    background: linear-gradient(135deg, rgba(139,92,246,0.28), rgba(34,211,238,0.18));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 14px -6px rgba(139,92,246,0.6);
+  }
+
+  /* ============ PANELS ============ */
+  .panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012));
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(24px) scale(0.994);
+    animation: rise 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .panel:nth-child(1) { animation-delay: 0.06s; }
+  .panel:nth-child(2) { animation-delay: 0.14s; }
+  .panel:nth-child(3) { animation-delay: 0.22s; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-head-left { display: flex; align-items: center; gap: 13px; }
+  .panel-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    border: 1px solid var(--border-strong);
+    background: var(--surface-2);
+    color: var(--fg-dim);
+  }
+  .panel-icon svg { width: 17px; height: 17px; }
+  .panel-title { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+  .panel-desc { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+  .count-badge {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-dim);
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .panel-body { padding: 8px 12px 12px; min-height: 64px; }
+
+  /* ============ ROWS ============ */
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 12px;
+    border-radius: 12px;
+    transition: background .2s ease, transform .2s cubic-bezier(.16,1,.3,1), border-color .2s ease;
+    border: 1px solid transparent;
+    animation: rowIn .5s cubic-bezier(.16,1,.3,1) both;
+    animation-delay: calc(var(--i, 0) * 45ms);
+  }
+  .row + .row { margin-top: 2px; }
+  .row:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.07); transform: translateX(3px); }
+  @keyframes rowIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .avatar {
+    flex: 0 0 auto;
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px;
+    color: #07070b;
+    letter-spacing: -0.02em;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+  }
+  .row-main { min-width: 0; flex: 1 1 auto; }
+  .row-title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .row-meta {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-top: 5px;
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+  .row-meta code {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--fg-dim);
+    background: rgba(255,255,255,0.05);
+    padding: 2px 7px;
+    border-radius: 6px;
+  }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .pill::before { content: ""; width: 5px; height: 5px; border-radius: 50%; }
+  .pill.pending { color: var(--amber); background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.24); }
+  .pill.pending::before { background: var(--amber); }
+  .pill.approved { color: var(--green); background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.24); }
+  .pill.approved::before { background: var(--green); }
+  .pill.rejected { color: var(--red); background: rgba(251,113,133,0.1); border-color: rgba(251,113,133,0.24); }
+  .pill.rejected::before { background: var(--red); }
+  .pill.snapshot { color: #c4b5fd; background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.28); }
+  .pill.snapshot::before { background: var(--violet); }
+  .pill.neutral { color: var(--fg-dim); background: rgba(255,255,255,0.05); border-color: var(--border-strong); }
+  .pill.neutral::before { background: var(--muted); }
+
+  .row-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+
+  .btn {
+    appearance: none;
+    border: 1px solid var(--border-strong);
+    background: var(--surface-2);
+    color: var(--fg-dim);
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 13px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all .16s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:hover { transform: translateY(-1px); color: var(--fg); }
+  .btn:active { transform: translateY(0) scale(0.97); }
+  .btn:disabled { opacity: 0.55; cursor: progress; transform: none; }
+  .btn.primary {
+    color: #05050a;
+    background: linear-gradient(135deg, var(--lime), #7ee787);
+    border-color: transparent;
+    box-shadow: 0 6px 18px -8px rgba(184,255,61,0.6);
+  }
+  .btn.primary:hover { box-shadow: 0 8px 22px -8px rgba(184,255,61,0.8); }
+  .btn.danger { color: var(--red); border-color: rgba(251,113,133,0.3); background: rgba(251,113,133,0.08); }
+  .btn.danger:hover { background: rgba(251,113,133,0.16); }
+  .btn.violet { color: #c4b5fd; border-color: rgba(139,92,246,0.32); background: rgba(139,92,246,0.1); }
+  .btn.violet:hover { background: rgba(139,92,246,0.18); }
+  .btn.amber { color: var(--amber); border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.08); }
+  .btn.amber:hover { background: rgba(251,191,36,0.16); }
+  .btn.ghost { background: transparent; }
+
+  .expandable-header {
+    display: flex; align-items: center; gap: 14px;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    text-align: left;
+    color: inherit;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 13px 12px;
+    border-radius: 12px;
+    transition: background .16s ease;
+  }
+  .expandable-header:hover { background: rgba(255,255,255,0.035); }
+  .expandable-header:hover .chevron { color: var(--cyan); }
+  .chevron { transition: transform .22s ease; color: var(--muted); flex: 0 0 auto; }
+  .expanded .chevron { transform: rotate(90deg); }
+  .publication-detail {
+    margin: 4px 12px 10px 64px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.28);
+    font-size: 12.5px;
+    color: var(--fg-dim);
+    animation: detailIn .22s ease;
+  }
+  @keyframes detailIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .publication-detail .fields {
+    display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px;
+  }
+  .field-chip {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(52,211,153,0.1);
+    border: 1px solid rgba(52,211,153,0.22);
+    color: var(--green);
+  }
+  .detail-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+  /* ============ STATES ============ */
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 34px 20px;
+    text-align: center;
+  }
+  .empty-icon {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    border: 1px dashed var(--border-strong);
+    color: var(--muted);
+    background: var(--surface);
+    margin-bottom: 4px;
+  }
+  .empty-title { font-size: 13.5px; font-weight: 600; color: var(--fg-dim); }
+  .empty-sub { font-size: 12px; color: var(--muted); max-width: 320px; }
+
+  .skeleton { padding: 8px 12px; }
+  .sk-row { display: flex; align-items: center; gap: 14px; padding: 13px 12px; }
+  .sk-block {
+    border-radius: 8px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.045) 25%, rgba(255,255,255,0.10) 37%, rgba(255,255,255,0.045) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+  }
+  .sk-avatar { width: 38px; height: 38px; border-radius: 10px; flex: 0 0 auto; }
+  .sk-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .sk-line-lg { height: 13px; width: 42%; }
+  .sk-line-sm { height: 9px; width: 26%; }
+  .sk-btn { width: 64px; height: 30px; }
+  @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+  .error-state {
+    display: flex; align-items: flex-start; gap: 12px;
+    margin: 8px 12px 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(251,113,133,0.28);
+    background: rgba(251,113,133,0.07);
+    font-size: 12.5px;
+    color: #ffd6dc;
+  }
+  .error-state strong { color: var(--red); }
+
+  /* ============ FOOTER ============ */
+  footer {
+    margin-top: 20px;
+    padding: 34px 0 60px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .foot-left { font-size: 12px; color: var(--muted); }
+  .foot-left code { font-family: var(--mono); color: var(--fg-dim); font-size: 11px; }
+  .foot-right { display: flex; align-items: center; gap: 18px; font-size: 11.5px; color: var(--muted); }
+  .foot-right span { display: inline-flex; align-items: center; gap: 7px; }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 860px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .brand-sub { display: none; }
+    .row-actions { width: 100%; justify-content: flex-start; padding-left: 52px; }
+  }
+  @media (max-width: 620px) {
+    .wrap { padding: 0 16px; }
+    .hero { padding: 44px 0 26px; }
+    .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat { padding: 16px; }
+    .stat-value { font-size: 24px; }
+    .toolbar { align-items: flex-start; }
+    .segmented { width: 100%; overflow-x: auto; }
+    .publication-detail { margin-left: 12px; }
+    .topbar-right .ghost-btn span { display: none; }
+    .foot-right { flex-direction: column; align-items: flex-start; gap: 8px; }
+  }
+
+  :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 8px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after { animation: none !important; transition: none !important; }
+    .panel { opacity: 1 !important; transform: none !important; }
+    .row { opacity: 1 !important; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="particles" aria-hidden="true"></canvas>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">L</div>
+      <div class="brand-text">
+        <div class="brand-name">Local Project Intelligence</div>
+        <div class="brand-sub">CONSOLE // 127.0.0.1</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-pill checking" id="api-status">
+        <span class="dot"></span>
+        <span id="api-status-text">checking api…</span>
+      </div>
+      <div class="status-pill" id="watcher-status">
+        <span class="dot"></span>
+        <span id="watcher-status-text">watching…</span>
+      </div>
+      <a class="ghost-btn" href="http://127.0.0.1:3001/api/graph" target="_blank" rel="noreferrer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 4h18"/>
+          <path d="M3 8h12"/>
+          <path d="M3 12h18"/>
+          <path d="M3 16h12"/>
+          <path d="M3 20h18"/>
+        </svg>
+        <span>Graph</span>
+      </a>
+      <a class="ghost-btn" href="http://127.0.0.1:3001/api/health" target="_blank" rel="noreferrer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <span>API Health</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="eyebrow">
+      Local-First Intelligence
+      <span class="tag">PRIVATE</span>
+    </div>
+    <h1 class="title">
+      Your codebase,<br/>
+      <span class="grad">fully understood.</span>
+    </h1>
+    <p class="lede">
+      A private, loopback-only console for discovering projects, tracking technology
+      signals, and curating what gets <strong>published</strong>. Nothing leaves this machine
+      without explicit approval.
+    </p>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats" aria-label="Overview metrics">
+    <div class="stat">
+      <div class="stat-label">
+        <i style="background: var(--cyan)"></i> Total Projects
+      </div>
+      <div class="stat-value" id="stat-total">—</div>
+      <div class="stat-foot" id="stat-total-foot">discovered locally</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">
+        <i style="background: var(--amber)"></i> Pending
+      </div>
+      <div class="stat-value pending" id="stat-pending">—</div>
+      <div class="stat-foot">awaiting review</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">
+        <i style="background: var(--green)"></i> Approved
+      </div>
+      <div class="stat-value approved" id="stat-approved">—</div>
+      <div class="stat-foot">cleared for publication</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">
+        <i style="background: var(--violet)"></i> Snapshots
+      </div>
+      <div class="stat-value snapshot" id="stat-snapshots">—</div>
+      <div class="stat-foot">immutable releases</div>
+    </div>
+  </section>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="toolbar-title">
+      <h2>Publication Control</h2>
+      <span id="filter-summary">all states</span>
+    </div>
+    <div class="segmented" role="tablist" aria-label="Filter by publication state">
+      <button class="active" data-filter="all" role="tab" aria-selected="true">All</button>
+      <button data-filter="pending" role="tab" aria-selected="false">Pending</button>
+      <button data-filter="approved" role="tab" aria-selected="false">Approved</button>
+      <button data-filter="rejected" role="tab" aria-selected="false">Rejected</button>
+      <button data-filter="snapshot" role="tab" aria-selected="false">Snapshot</button>
+    </div>
+    <div class="toolbar-right">
+      <input
+        type="text"
+        id="project-search"
+        class="input-search"
+        placeholder="Search projects..."
+        autocomplete="off"
+      />
+    </div>
+  </div>
+
+  <!-- Graph Panel -->
+  <section class="panel" id="panel-graph">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <div class="panel-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 4h18"/>
+            <path d="M3 8h12"/>
+            <path d="M3 12h18"/>
+            <path d="M3 16h12"/>
+            <path d="M3 20h18"/>
+          </svg>
+        </div>
+        <div>
+          <div class="panel-title">Project Graph</div>
+          <div class="panel-desc">Nodes: projects & technologies, Edges: DECLARED relationships</div>
+        </div>
+      </div>
+      <span class="count-badge" id="count-projects">0</span>
+    </div>
+    <canvas id="graph-canvas" width="100%" height="300"></canvas>
+  </section>
+
+  <!-- PANEL 1: Candidates -->
+  <section class="panel" id="panel-candidates">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <div class="panel-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
+          </svg>
+        </div>
+        <div>
+          <div class="panel-title">Publication Candidates</div>
+          <div class="panel-desc">Projects awaiting publication review.</div>
+        </div>
+      </div>
+      <span class="count-badge" id="count-candidates">0</span>
+    </div>
+    <div class="panel-body" id="candidates"></div>
+  </section>
+
+  <!-- PANEL 2: Project list -->
+  <section class="panel" id="panel-projects">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <div class="panel-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="panel-title">Project Publication State</div>
+          <div class="panel-desc">Per-project approval and sanitized views.</div>
+        </div>
+      </div>
+      <span class="count-badge" id="count-projects">0</span>
+    </div>
+    <div class="panel-body" id="project-list"></div>
+  </section>
+
+  <!-- PANEL 3: Snapshots -->
+  <section class="panel" id="panel-snapshots">
+    <div class="panel-head">
+      <div class="panel-head-left">
+        <div class="panel-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
+          </svg>
+        </div>
+        <div>
+          <div class="panel-title">Publication Snapshots</div>
+          <div class="panel-desc">Immutable history of approved releases.</div>
+        </div>
+      </div>
+      <span class="count-badge" id="count-snapshots">0</span>
+    </div>
+    <div class="panel-body" id="snapshot-history"></div>
+  </section>
+
+  <footer>
+    <div class="foot-left">
+      Loopback-only · <code>127.0.0.1:3001</code> · Bearer-authenticated · origin-validated
+    </div>
+    <div class="foot-right">
+      <span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Private by default
+      </span>
+      <span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <span id="foot-clock">—</span>
+      </span>
+    </div>
+  </footer>
+</main>
+
+<script>
+/* ------------------------------------------------------------------
+   Local Project Intelligence — Console runtime
+   Single-file dashboard. Mirrors apps/dashboard/src/index.ts logic so
+   the console works when opened directly over file://.
+   API is loopback-only; failures degrade gracefully to polished states.
+------------------------------------------------------------------- */
+(() => {
+  "use strict";
+
+  const API_BASE =
+    location.protocol === "http:" && location.port === "3001"
+      ? ""
+      : "http://127.0.0.1:3001";
+  const AUTH = "Bearer lpi-local-dev-token";
+  const state = { filter: "all", lastCandidates: [], lastSnapshots: [] };
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+
+  const GRADIENTS = [
+    "linear-gradient(135deg,#8b5cf6,#22d3ee)",
+    "linear-gradient(135deg,#b8ff3d,#34d399)",
+    "linear-gradient(135deg,#fbbf24,#fb7185)",
+    "linear-gradient(135deg,#22d3ee,#8b5cf6)",
+    "linear-gradient(135deg,#fb7185,#fbbf24)",
+    "linear-gradient(135deg,#34d399,#22d3ee)",
+  ];
+  const gradFor = (name) => {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return GRADIENTS[h % GRADIENTS.length];
+  };
+  const initials = (name) => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "?";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  };
+
+  const svg = {
+    chevron: '<svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
+    inbox: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+    check: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>',
+    camera: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
+  };
+
+  // ---------- skeleton ----------
+  function skeleton() {
+    return `<div class="skeleton">
+      ${Array.from({ length: 2 }).map(() => `
+        <div class="sk-row">
+          <div class="sk-block sk-avatar"></div>
+          <div class="sk-lines">
+            <div class="sk-block sk-line-lg"></div>
+            <div class="sk-block sk-line-sm"></div>
+          </div>
+          <div class="sk-block sk-btn"></div>
+        </div>`).join("")}
+    </div>`;
+  }
+
+  function emptyState(icon, title, sub) {
+    return `<div class="empty">
+      <div class="empty-icon">${icon}</div>
+      <div class="empty-title">${esc(title)}</div>
+      <div class="empty-sub">${esc(sub)}</div>
+    </div>`;
+  }
+
+  function errorState(message) {
+    return `<div class="error-state">
+      <div>
+        <strong>Couldn’t reach the local API.</strong><br/>
+        ${esc(message)} — start the server with <code>npm run dev</code>.
+      </div>
+    </div>`;
+  }
+
+  // ---------- API ----------
+  async function api(path, options) {
+    const opts = options ?? {};
+    const headers = {
+      Accept: "application/json",
+      Authorization: AUTH,
+      ...(opts.body ? { "Content-Type": "application/json" } : {}),
+      ...(opts.headers || {}),
+    };
+    const res = await fetch(`${API_BASE}/api${path}`, { ...opts, headers });
+    if (!res.ok) {
+      let detail = res.statusText;
+      try { detail = (await res.text()) || detail; } catch { /* ignore */ }
+      throw new Error(`HTTP ${res.status} · ${detail}`);
+    }
+    return res.json();
+  }
+
+  async function setApiStatus() {
+    const el = $("api-status");
+    const txt = $("api-status-text");
+    el.classList.remove("online", "offline", "checking");
+    el.classList.add("checking");
+    txt.textContent = "checking api…";
+    try {
+      await api("/health");
+      el.classList.remove("checking", "offline");
+      el.classList.add("online");
+      txt.textContent = "api online";
+    } catch {
+      el.classList.remove("checking", "online");
+      el.classList.add("offline");
+      txt.textContent = "api offline";
+    }
+  }
+
+  function setWatcherStatus() {
+    const el = $("watcher-status");
+    const txt = $("watcher-status-text");
+    el.classList.remove("online", "offline", "checking");
+    el.classList.add("checking");
+    txt.textContent = "checking…";
+    try {
+      await api("/api/bootstrap");
+      const data = await api("/api/bootstrap");
+      el.classList.remove("checking", "offline");
+      
+      // Display watching status
+      const wState = data.data?.watcherStatus;
+      if (wState) {
+        el.classList.add("online");
+        txt.textContent = `Watching: ${wState.watchedRoots} roots, ${wState.activeScans} scans`;
+        
+        // Set dot color based on state
+        if (wState.state === "WATCHING") {
+          el.classList.add("online");
+        } else if (wState.state === "PAUSED") {
+          el.classList.add("checking"); // yellow/amber
+        } else if (wState.state === "ERROR") {
+          el.classList.add("offline");
+        }
+      } else {
+        txt.textContent = "watcher data unavailable";
+      }
+    } catch {
+      el.classList.remove("checking", "online");
+      el.classList.add("offline");
+      txt.textContent = "watcher offline";
+    }
+  }
+
+  // ---------- graph ----------
+  function setGraphStatus() {
+    try {
+      api("/api/graph")
+        .then((response) => response.json())
+        .then((data) => {
+          const nodes = data.data?.nodes || [];
+          const edges = data.data?.edges || [];
+          
+          // Update count badge
+          const countEl = $("count-projects");
+          if (countEl) {
+            countEl.textContent = nodes.length;
+            countEl.dataset.value = nodes.length;
+          }
+          
+          // Render graph if canvas exists
+          const canvasEl = $("graph-canvas");
+          if (!canvasEl) return;
+          
+          const ctx = canvasEl.getContext("2d");
+          if (!ctx) return;
+          
+          // State for interaction
+          let offsetX = 0;
+          let offsetY = 0;
+          let scale = 1;
+          let isPanning = false;
+          let lastX = 0;
+          let lastY = 0;
+          
+          // Mouse handlers for pan/zoom
+          canvasEl.addEventListener("mousedown", (e) => {
+            if (e.button !== 0) return;
+            isPanning = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            canvasEl.style.cursor = " grabbing";
+          });
+          
+          canvasEl.addEventListener("mousemove", (e) => {
+            if (!isPanning) return;
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            offsetX += dx;
+            offsetY += dy;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            redraw();
+          });
+          
+          canvasEl.addEventListener("mouseup", () => {
+            isPanning = false;
+            canvasEl.style.cursor = "default";
+          });
+          
+          canvasEl.addEventListener("wheel", (e) => {
+            const rect = canvasEl.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const scaleDelta = e.deltaY > 0 ? 0.9 : 1.1;
+            const newScale = Math.max(0.5, Math.min(3, scale * scaleDelta));
+            
+            // Scale around mouse position
+            offsetX = mouseX - (mouseX - offsetX) * (newScale / scale);
+            offsetY = mouseY - (mouseY - offsetY) * (newScale / scale);
+            scale = newScale;
+            redraw();
+          });
+          
+          // Double-click to reset view
+          let dblClickTimer = null;
+          canvasEl.addEventListener("dblclick", (e) => {
+            clearTimeout(dblClickTimer);
+            dblClickTimer = setTimeout(() => {
+              offsetX = 0;
+              offsetY = 0;
+              scale = 1;
+              redraw();
+            }, 300);
+          });
+          
+          // Node positions (arranged circularly)
+          const nodePositions = {};
+          const totalNodes = nodes.length;
+          nodes.forEach((node, i) => {
+            const angle = (i / Math.max(1, totalNodes)) * Math.PI * 2 - Math.PI / 2;
+            const radius = 150 * scale;
+            nodePositions[node.id] = {
+              x: 250 + offsetX + radius * Math.cos(angle),
+              y: 200 + offsetY + radius * Math.sin(angle)
+            };
+          });
+          
+          // Draw edges
+          ctx.strokeStyle = "#6b7280";
+          ctx.lineWidth = 2 * scale;
+          ctx.setLineDash([5 * scale, 3 * scale]);
+          edges.forEach(edge => {
+            const fromNode = nodes.find(n => n.id === edge.from);
+            const toNode = nodes.find(n => n.id === edge.to);
+            if (fromNode && toNode) {
+              const x1 = nodePositions[fromNode]?.x ?? 250;
+              const y1 = nodePositions[fromNode]?.y ?? 200;
+              const x2 = nodePositions[toNode]?.x ?? 250;
+              const y2 = nodePositions[toNode]?.y ?? 200;
+              ctx.beginPath();
+              ctx.moveTo(x1, y1);
+              ctx.lineTo(x2, y2);
+              ctx.stroke();
+            }
+          });
+          
+          ctx.setLineDash([]);
+          
+          // Draw nodes
+          nodes.forEach(node => {
+            const pos = nodePositions[node.id];
+            if (!pos) return;
+            
+            ctx.fillStyle = getNodeColor(node.type);
+            ctx.beginPath();
+            const radius = 8 * scale;
+            ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw border for selected node
+            if (node.selected) {
+              ctx.strokeStyle = "#f97316";
+              ctx.lineWidth = 2 * scale;
+              ctx.beginPath();
+              ctx.arc(pos.x, pos.y, radius + 4 * scale, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            
+            // Draw label
+            ctx.fillStyle = "#f5f5f7";
+            ctx.font = `${10 * scale}px Inter`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(node.label, pos.x, pos.y);
+          });
+          
+          // Draw node count indicator
+          if (nodes.length > 0) {
+            ctx.fillStyle = "#10b981";
+            ctx.font = `${12 * scale}px Inter`;
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+            ctx.fillText(`• ${nodes.length} entities`, 20, 20);
+          }
+          
+          function redraw() {
+            // Clear canvas
+            ctx.fillStyle = "#08080b";
+            ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+            
+            // Redraw edges
+            ctx.strokeStyle = "#6b7280";
+            ctx.lineWidth = 2 * scale;
+            ctx.setLineDash([5 * scale, 3 * scale]);
+            edges.forEach(edge => {
+              const fromNode = nodes.find(n => n.id === edge.from);
+              const toNode = nodes.find(n => n.id === edge.to);
+              if (fromNode && toNode) {
+                const x1 = nodePositions[fromNode]?.x ?? 250;
+                const y1 = nodePositions[fromNode]?.y ?? 200;
+                const x2 = nodePositions[toNode]?.x ?? 250;
+                const y2 = nodePositions[toNode]?.y ?? 200;
+                ctx.beginPath();
+                ctx.moveTo(x1 + offsetX, y1 + offsetY);
+                ctx.lineTo(x2 + offsetX, y2 + offsetY);
+                ctx.stroke();
+              }
+            });
+            ctx.setLineDash([]);
+            
+            // Redraw nodes
+            nodes.forEach(node => {
+              const pos = nodePositions[node.id];
+              if (!pos) return;
+              
+              ctx.fillStyle = getNodeColor(node.type);
+              ctx.beginPath();
+              const radius = 8 * scale;
+              ctx.arc(pos.x + offsetX, pos.y + offsetY, radius, 0, Math.PI * 2);
+              ctx.fill();
+              
+              if (node.selected) {
+                ctx.strokeStyle = "#f97316";
+                ctx.lineWidth = 2 * scale;
+                ctx.beginPath();
+                ctx.arc(pos.x + offsetX, pos.y + offsetY, radius + 4 * scale, 0, Math.PI * 2);
+                ctx.stroke();
+              }
+              
+              ctx.fillStyle = "#f5f5f7";
+              ctx.font = `${10 * scale}px Inter`;
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+              ctx.fillText(node.label, pos.x + offsetX, pos.y + offsetY);
+            });
+          }
+        })
+        .catch(() => {
+          // Graph data unavailable, silently fall back
+        });
+    } catch (error) {
+      // Graph data unavailable, silently fall back
+    }
+  }
+
+  function getNodeColor(type) {
+    switch (type) {
+      case "project": return "#3b82f6";
+      case "technology": return "#10b981";
+      case "ecosystem": return "#8b5cf6";
+      case "language": return "#f59e0b";
+      default: return "#6b7280";
+    }
+  }
+    state.filter === "all" ||
+    project.detectionState === state.filter ||
+    project.status === state.filter ||
+    (project.publication && project.publication.state === state.filter);
+
+  // ---------- stats ----------
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function animateNumber(el, to) {
+    if (!el) return;
+    const from = Number(el.dataset.value ?? el.textContent) || 0;
+    el.dataset.value = String(to);
+    if (reduceMotion || from === to) {
+      el.textContent = String(to);
+      return;
+    }
+    const started = performance.now();
+    const duration = 620;
+    const step = (now) => {
+      const p = Math.min(1, (now - started) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = String(Math.round(from + (to - from) * eased));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  function renderStats(candidates, snapshots) {
+    animateNumber($("stat-total"), candidates.length);
+    animateNumber($("stat-pending"), candidates.filter((c) => (c.publication?.state ?? c.status) === "pending").length);
+    animateNumber($("stat-approved"), candidates.filter((c) => (c.publication?.state ?? c.status) === "approved").length);
+    animateNumber($("stat-snapshots"), snapshots.length);
+    $("stat-total-foot").textContent = candidates.length ? "discovered locally" : "no scan yet";
+  }
+
+  // ---------- candidates ----------
+  async function renderCandidates(snapshots) {
+    const host = $("candidates");
+    host.innerHTML = skeleton();
+    let candidates = [];
+    try {
+      const data = await api("/publication/candidates");
+      candidates = Array.isArray(data) ? data : (data?.data ?? []);
+    } catch (e) {
+      host.innerHTML = errorState(e.message);
+      $("count-candidates").textContent = "0";
+      state.lastCandidates = [];
+      renderStats([], snapshots || []);
+      return;
+    }
+
+    state.lastCandidates = candidates;
+    renderStats(candidates, snapshots || []);
+
+    const visible = candidates.filter(matchesFilter);
+    $("count-candidates").textContent = visible.length;
+
+    if (visible.length === 0) {
+      host.innerHTML = state.filter === "all"
+        ? emptyState(svg.inbox, "No candidates yet", "Run a scan to discover projects on this machine.")
+        : emptyState(svg.inbox, `No ${state.filter} candidates`, "Nothing matches this filter right now.");
+      return;
+    }
+
+    host.innerHTML = visible.map((p, i) => {
+      const status = p.publication?.state ?? p.status ?? "pending";
+      return `<div class="row" style="--i:${i}" data-candidate="${esc(p.id)}">
+        <div class="avatar" style="background:${gradFor(p.displayName || p.id)}">${esc(initials(p.displayName || p.id))}</div>
+        <div class="row-main">
+          <div class="row-title">${esc(p.displayName)}</div>
+          <div class="row-meta">
+            <code>${esc(p.id)}</code>
+            <span class="pill ${esc(status)}">${esc(status)}</span>
+            ${p.detectionState ? `<span>${esc(p.detectionState)}</span>` : ""}
+          </div>
+        </div>
+        <div class="row-actions">
+          <button class="btn primary" data-action="approve" data-id="${esc(p.id)}">Approve</button>
+          <button class="btn danger" data-action="reject" data-id="${esc(p.id)}">Reject</button>
+          <button class="btn violet" data-action="snapshot" data-id="${esc(p.id)}">Snapshot</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  // ---------- project list ----------
+  function publicationDetail(pub) {
+    if (!pub) return "";
+    if (pub.state === "approved") {
+      const fields = (pub.approvedFields || []).map((f) => `<span class="field-chip">${esc(f)}</span>`).join("");
+      return `<div class="publication-detail">
+        <div>Approved fields</div>
+        <div class="fields">${fields || '<span class="empty-sub">No fields approved</span>'}</div>
+        <div class="detail-actions">
+          <button class="btn amber" data-action="unpublish" data-id="__ID__">Unpublish</button>
+        </div>
+      </div>`;
+    }
+    if (pub.state === "rejected") {
+      return `<div class="publication-detail">
+        <div>Rejected — ${esc(pub.rejectionReason || "no reason recorded")}</div>
+        <div class="detail-actions">
+          <button class="btn primary" data-action="approve" data-id="__ID__">Reinstate</button>
+        </div>
+      </div>`;
+    }
+    if (pub.state === "snapshot") {
+      return `<div class="publication-detail">
+        <div>Snapshot generated — ready to publish.</div>
+        <div class="detail-actions">
+          <button class="btn primary" data-action="approve" data-id="__ID__">Approve</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="publication-detail">
+      <div>Pending review</div>
+      <div class="detail-actions">
+        <button class="btn primary" data-action="approve" data-id="__ID__">Approve</button>
+        <button class="btn danger" data-action="reject" data-id="__ID__">Reject</button>
+      </div>
+    </div>`;
+  }
+
+  async function renderProjects() {
+    const host = $("project-list");
+    host.innerHTML = skeleton();
+    let projects = [];
+    try {
+      // Prefer a project list endpoint; fall back to candidates.
+      try {
+        const data = await api("/projects");
+        projects = Array.isArray(data) ? data : (data?.data ?? []);
+      } catch {
+        const data = await api("/publication/candidates");
+        projects = Array.isArray(data) ? data : (data?.data ?? []);
+      }
+    } catch (e) {
+      host.innerHTML = errorState(e.message);
+      $("count-projects").textContent = "0";
+      return;
+    }
+
+    const visible = projects.filter(matchesFilter);
+    $("count-projects").textContent = visible.length;
+
+    if (visible.length === 0) {
+      host.innerHTML = state.filter === "all"
+        ? emptyState(svg.check, "No projects discovered", "Point the scanner at an authorized root to begin.")
+        : emptyState(svg.check, `No ${state.filter} projects`, "This filter has no matches.");
+      return;
+    }
+
+    host.innerHTML = visible.map((p) => {
+      const pubState = p.publication?.state ?? p.status ?? "pending";
+      return `<li class="project-item-expand" data-expand="${esc(p.id)}">
+        <button class="expandable-header" data-toggle="${esc(p.id)}" aria-expanded="false">
+          ${svg.chevron}
+          <div class="avatar" style="background:${gradFor(p.displayName || p.id)}">${esc(initials(p.displayName || p.id))}</div>
+          <div class="row-main">
+            <div class="row-title">${esc(p.displayName)}</div>
+            <div class="row-meta">
+              <code>${esc(p.id)}</code>
+              <span class="pill ${esc(pubState)}">${esc(pubState)}</span>
+              ${p.classification ? `<span>${esc(p.classification)}</span>` : ""}
+            </div>
+          </div>
+        </button>
+        <div class="detail-slot" data-slot="${esc(p.id)}"></div>
+      </li>`;
+    }).join("");
+  }
+
+  // ---------- snapshots ----------
+  async function renderSnapshots() {
+    const host = $("snapshot-history");
+    host.innerHTML = skeleton();
+    let snapshots = [];
+    try {
+      const data = await api("/publication/snapshots");
+      snapshots = Array.isArray(data) ? data : (data?.data ?? []);
+    } catch {
+      // Snapshots endpoint may not be mounted yet — show a clean empty state.
+      state.lastSnapshots = [];
+      $("count-snapshots").textContent = "0";
+      $("stat-snapshots").textContent = "0";
+      host.innerHTML = emptyState(svg.camera, "No snapshots yet", "Approved projects can be frozen into immutable releases.");
+      return;
+    }
+
+    state.lastSnapshots = snapshots;
+    $("count-snapshots").textContent = snapshots.length;
+    $("stat-snapshots").textContent = snapshots.length;
+
+    if (snapshots.length === 0) {
+      host.innerHTML = emptyState(svg.camera, "No snapshots yet", "Approved projects can be frozen into immutable releases.");
+      return;
+    }
+
+    host.innerHTML = snapshots.map((s, i) => {
+      const when = s.generatedAt ? new Date(s.generatedAt) : null;
+      const label = when && !isNaN(when) ? when.toLocaleString() : "—";
+      return `<div class="row" style="--i:${i}">
+        <div class="avatar" style="background:${gradFor(s.id)}">${esc(initials(s.id))}</div>
+        <div class="row-main">
+          <div class="row-title">${esc(s.id)}</div>
+          <div class="row-meta">
+            <code>${esc(s.id)}</code>
+            <span class="pill neutral">${esc(s.status || "generated")}</span>
+            <span>${esc(label)}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  // ---------- actions ----------
+  const API_ACTIONS = {
+    approve: (id) => api(`/projects/${encodeURIComponent(id)}/publication/transition`, {
+      method: "PATCH",
+      headers: { Authorization: AUTH },
+      body: JSON.stringify({ transitionMap: { state: "approved", approvedFields: ["displayName", "status", "detectionState"] } }),
+    }),
+    reject: (id) => api(`/projects/${encodeURIComponent(id)}/publication/transition`, {
+      method: "PATCH",
+      headers: { Authorization: AUTH },
+      body: JSON.stringify({ transitionMap: { state: "rejected", rejectionReason: "Rejected by reviewer" } }),
+    }),
+    snapshot: (id) => api(`/publication/snapshots`, {
+      method: "POST",
+      headers: { Authorization: AUTH },
+      body: JSON.stringify({ projectIds: [id] }),
+    }),
+    unpublish: (id) => api(`/projects/${encodeURIComponent(id)}/publication/transition`, {
+      method: "PATCH",
+      headers: { Authorization: AUTH },
+      body: JSON.stringify({ transitionMap: { state: "pending" } }),
+    }),
+  };
+
+  async function refresh() {
+    await renderCandidates(state.lastSnapshots);
+    await renderProjects();
+    await renderSnapshots();
+  }
+
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (btn) {
+      const { action, id } = btn.dataset;
+      if (action === "reject" && !confirm(`Reject publication for ${id}?`)) return;
+      if (action === "snapshot" && !confirm(`Generate snapshot for ${id}?`)) return;
+
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Working…";
+      try {
+        await API_ACTIONS[action](id);
+        if (action === "snapshot") await renderSnapshots();
+        await refresh();
+      } catch (err) {
+        alert(`${action} failed: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+      return;
+    }
+
+    const toggle = e.target.closest("[data-toggle]");
+    if (toggle) {
+      const id = toggle.dataset.toggle;
+      const item = toggle.closest(".project-item-expand");
+      const slot = item.querySelector(`[data-slot="${CSS.escape(id)}"]`);
+      const expanded = item.classList.toggle("expanded");
+      toggle.setAttribute("aria-expanded", String(expanded));
+      if (expanded) {
+        slot.innerHTML = `<div class="publication-detail"><div class="sk-block" style="height:10px;width:40%"></div></div>`;
+        try {
+          const detail = await api(`/projects/${encodeURIComponent(id)}`);
+          const pub = detail?.data?.publication ?? detail?.publication ?? null;
+          slot.innerHTML = publicationDetail(pub).replaceAll("__ID__", esc(id)) ||
+            emptyState(svg.inbox, "No publication data", "This project has no publication record yet.");
+        } catch (err) {
+          slot.innerHTML = errorState(err.message);
+        }
+      } else {
+        slot.innerHTML = "";
+      }
+      return;
+    }
+
+    const seg = e.target.closest("[data-filter]");
+    if (seg) {
+      document.querySelectorAll("[data-filter]").forEach((b) => {
+        b.classList.toggle("active", b === seg);
+        b.setAttribute("aria-selected", String(b === seg));
+      });
+      state.filter = seg.dataset.filter;
+      $("filter-summary").textContent = state.filter === "all" ? "all states" : `${state.filter} only`;
+      await refresh();
+    }
+  });
+
+  // ---------- clock ----------
+  function tickClock() {
+    const t = new Date();
+    $("foot-clock").textContent = t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  }
+
+  // ---------- linked particle constellation ----------
+  function mountParticles() {
+    const canvas = $("particles");
+    if (!canvas || typeof canvas.getContext !== "function") return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const PALETTE = [
+      [139, 92, 246],
+      [34, 211, 238],
+      [184, 255, 61],
+      [148, 163, 184],
+    ];
+    const LINK_DISTANCE = 138;
+    const CURSOR_DISTANCE = 180;
+    const pointer = { x: -9999, y: -9999, active: false };
+    let nodes = [];
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let rafId = 0;
+    let lastFrame = 0;
+    let resizeTimer = 0;
+
+    const rand = (min, max) => min + Math.random() * (max - min);
+
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = width + "px";
+      canvas.style.height = height + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const target = Math.max(34, Math.min(96, Math.round((width * height) / 20000)));
+      const previous = nodes;
+      nodes = Array.from({ length: target }, (_, index) => previous[index] ?? {
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: rand(-0.24, 0.24),
+        vy: rand(-0.24, 0.24),
+        r: rand(0.9, 2.1),
+        color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+        phase: Math.random() * Math.PI * 2,
+      });
+
+      for (const node of nodes) {
+        node.x = Math.min(Math.max(node.x, 0), width);
+        node.y = Math.min(Math.max(node.y, 0), height);
+      }
+
+      draw(0);
+    }
+
+    function draw(delta) {
+      const step = Math.min(delta, 48) / 16.667;
+      ctx.clearRect(0, 0, width, height);
+
+      for (const node of nodes) {
+        if (!reduceMotion) {
+          node.x += node.vx * step;
+          node.y += node.vy * step;
+
+          if (node.x < -20) node.x = width + 20;
+          if (node.x > width + 20) node.x = -20;
+          if (node.y < -20) node.y = height + 20;
+          if (node.y > height + 20) node.y = -20;
+
+          if (pointer.active) {
+            const dx = node.x - pointer.x;
+            const dy = node.y - pointer.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 110 && dist > 0.001) {
+              const push = (1 - dist / 110) * 0.55 * step;
+              node.x += (dx / dist) * push;
+              node.y += (dy / dist) * push;
+            }
+          }
+        }
+      }
+
+      for (let i = 0; i < nodes.length; i += 1) {
+        const a = nodes[i];
+        for (let j = i + 1; j < nodes.length; j += 1) {
+          const b = nodes[j];
+          const dist = Math.hypot(a.x - b.x, a.y - b.y);
+          if (dist > LINK_DISTANCE) continue;
+          const strength = 1 - dist / LINK_DISTANCE;
+          ctx.strokeStyle = `rgba(148, 163, 184, ${strength * 0.26})`;
+          ctx.lineWidth = 0.7;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+
+      if (pointer.active) {
+        for (const node of nodes) {
+          const dist = Math.hypot(node.x - pointer.x, node.y - pointer.y);
+          if (dist > CURSOR_DISTANCE) continue;
+          const strength = 1 - dist / CURSOR_DISTANCE;
+          ctx.strokeStyle = `rgba(34, 211, 238, ${strength * 0.34})`;
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(node.x, node.y);
+          ctx.lineTo(pointer.x, pointer.y);
+          ctx.stroke();
+        }
+      }
+
+      const now = performance.now();
+      for (const node of nodes) {
+        const [r, g, b] = node.color;
+        const twinkle = reduceMotion ? 1 : 0.78 + Math.sin(now / 1400 + node.phase) * 0.22;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0.62 * twinkle})`;
+        ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function loop(timestamp) {
+      const delta = lastFrame === 0 ? 16 : timestamp - lastFrame;
+      lastFrame = timestamp;
+      draw(delta);
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function start() {
+      if (rafId !== 0 || reduceMotion) return;
+      lastFrame = 0;
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function stop() {
+      if (rafId !== 0) cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+
+    window.addEventListener("mousemove", (event) => {
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
+      pointer.active = true;
+    }, { passive: true });
+
+    window.addEventListener("mouseout", (event) => {
+      if (event.relatedTarget === null) pointer.active = false;
+    });
+
+    window.addEventListener("resize", () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        resize();
+        if (reduceMotion) draw(0);
+      }, 160);
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stop();
+      else start();
+    });
+
+    resize();
+
+    if (reduceMotion) {
+      // Draw a single static constellation when motion is reduced.
+      draw(0);
+    } else {
+      start();
+    }
+  }
+
+  // ---------- boot ----------
+  async function boot() {
+    mountParticles();
+    tickClock();
+    setInterval(tickClock, 1000);
+    await setApiStatus();
+    await setWatcherStatus();
+    await refresh();
+    await setGraphStatus();
+    setInterval(setApiStatus, 20000);
+    setInterval(setWatcherStatus, 30000);
+    setInterval(setGraphStatus, 30000);
+  }
+
+  // ---------- search ----------
+  function initProjectSearch() {
+    const input = $("project-search");
+    if (!input) return;
+    input.addEventListener("input", (e) => {
+      const term = e.target.value.trim().toLowerCase();
+      const buttons = document.querySelectorAll(".segmented button");
+      const panels = document.querySelectorAll(".panel:not(#panel-graph)");
+
+      // Filter panels based on search term
+      panels.forEach((panel) => {
+        const title = panel.querySelector(".panel-title")?.textContent?.toLowerCase() || "";
+        const desc = panel.querySelector(".panel-desc")?.textContent?.toLowerCase() || "";
+        const show = title.includes(term) || desc.includes(term);
+        panel.style.display = show ? "block" : "none";
+      });
+
+      // Update active filter button
+      buttons.forEach((btn) => btn.classList.toggle("active", term === ""));
+    });
+  }
+
+  // ---------- filter ----------
+  const matchesFilter = (project) =>
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+</body>
+</html>
