@@ -5,8 +5,8 @@
   "description": "Local-first project discovery, intelligence, and portfolio publishing for Windows.",
   "type": "module",
   "engines": {
-    "node": ">=24.11.0 <25",
-    "npm": ">=11.8.0 <12"
+    "node": ">=18",
+    "npm": ">=8"
   },
   "workspaces": [
     "apps/*",
