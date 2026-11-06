@@ -1,6 +1,6 @@
 {
   "installCommand": "npm install --ignore-engines",
   "buildCommand": "echo 'Static site - no build needed'",
-  "outputDirectory": "apps/dashboard/src",
+  "outputDirectory": ".",
   "framework": null
 }
