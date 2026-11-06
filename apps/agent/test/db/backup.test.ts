@@ -69,7 +69,7 @@ describe("backupDatabase", () => {
     const inspection = inspectDatabase(backupPath);
 
     expect(inspection.integrity).toBe("ok");
-    expect(inspection.schemaVersion).toBe(1);
+    expect(inspection.schemaVersion).toBe(2);
     expect(inspection.tableCount).toBeGreaterThanOrEqual(13);
   });
 
@@ -102,7 +102,7 @@ describe("restoreDatabase", () => {
     const inspection = restoreDatabase(backupPath, restoredPath);
 
     expect(inspection.integrity).toBe("ok");
-    expect(inspection.schemaVersion).toBe(1);
+    expect(inspection.schemaVersion).toBe(2);
 
     const restored = track(openDatabase(restoredPath));
 

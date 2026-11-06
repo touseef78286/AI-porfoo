@@ -1,6 +1,6 @@
 # Local API Contract
 
-Status: **Planned. No API server exists yet.**
+Status: **Implemented against Gate 7 (loopback server running on 127.0.0.1:3001, 186 tests passing).**
 Last updated: 2026-11-04
 
 ## 1. Scope

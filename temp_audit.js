@@ -1,0 +1,11 @@
+import { open } from 'node:sqlite';
+const db = await open({ driver: require('better-sqlite3') });
+const tables = await db.pragma('table_list');
+console.log('Tables:', tables);
+const migrations = await db.prepare('SELECT * FROM schema_migrations').all();
+console.log('Migrations:', migrations.length);
+const projectCount = await db.prepare('SELECT COUNT(*) FROM projects').get();
+console.log('Project count:', projectCount['COUNT(*)']);
+const rootCount = await db.prepare('SELECT COUNT(*) FROM project_roots').get();
+console.log('Root count:', rootCount['COUNT(*)']);
+db.close();

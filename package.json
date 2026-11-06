@@ -16,7 +16,30 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --maxWorkers=2",
     "verify": "npm run typecheck && npm test && npm run verify:phase0",
-    "verify:phase0": "node scripts/verify-phase0.mjs"
+    "verify:phase0": "node scripts/verify-phase0.mjs",
+    "dev": "tsx apps/agent/src/api/index.ts",
+    "scan": "tsx apps/agent/src/cli/scan.ts",
+    "watch": "tsx apps/agent/src/cli/watch.ts",
+    "build": "tsc --build --dry-run && echo 'Build configuration valid'"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "dist/index.mjs",
+      "require": "dist/index.js",
+      "types": "dist/index.d.ts"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/local-project-intelligence/local-project-intelligence.git"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "fastify": "5.12.8",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "24.19.2",

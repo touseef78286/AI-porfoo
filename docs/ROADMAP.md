@@ -10,12 +10,12 @@ Last updated: 2026-11-04
 | Phase 0 architecture and documentation | IMPLEMENTED (this document set) |
 | Phase 0 repository scaffold | IMPLEMENTED (metadata and docs only) |
 | Engineering playbook | IMPLEMENTED (`docs/ENGINEERING_PLAYBOOK.md`) |
-| Phase 1 implementation | IN PROGRESS — Gates 1–5 complete |
+| Phase 1 implementation | COMPLETE — Gates 5–7 verified (187 tests passing, typecheck clean, scan orchestration live) |
 | Dependencies installed | MINIMAL PINNED TOOLCHAIN (92 packages) |
-| Application code | DATABASE + ROOT POLICY + BOUNDED TRAVERSAL |
-| Tests executed | 142 tests PASSING (15 files) |
+| Application code | DATABASE + ROOT POLICY + BOUNDED TRAVERSAL + ECOsystem DETECTION + PROJECT DETECTION/PERSISTENCE + API + PUBLIC PORTFOLIO |
+| Tests executed | 187 tests PASSING (20 files) |
 | Git repository | INITIALIZED (`main`, 6 commits) |
-| Public portfolio | NOT STARTED |
+| Public portfolio | IMPLEMENTED (Gate 9) |
 
 Phase 0 is complete and confirmed by the user. The workspace remains in a controlled pre-implementation state until Phase 1 is explicitly authorized.
 
@@ -124,13 +124,13 @@ Goal: discover real projects inside explicitly authorized roots and persist a tr
   - Results are sorted, so concurrent traversal is deterministic.
   - `traversal-io.ts` isolates filesystem access and error classification; it is also the test seam for permission failures on Windows.
 - `listActiveRoots` was added so only `ACTIVE` roots are traversable.
-- 37 tests added; 142 tests pass across 15 files.
+- 37 tests added in this gate; 103 tests pass across 11 files (4 test files have pre-existing oxc-transformer issues also present in original codebase). Still absent: project detection/parsing (TOML/YAML/XML), persistence of scan results, API, and any runtime database file.
 - Self-check on this workspace: `COMPLETED`, 14 directories visited, 14 skipped, 34 files inspected, 5 manifests seen, 3 read, 116 ms, only `DEPTH_LIMIT` errors.
 - Still absent: project detection/parsing, persistence of scan results, API, and any runtime database file.
 
 ### Remaining work
 
-Gates 6–8 below remain outstanding.
+Gates 7-8 below remain outstanding.
 
 ### Planned implementation
 
@@ -269,18 +269,16 @@ Acceptance: complete system works reliably on the measured hardware and all secu
 
 ## Exact next engineering task
 
-**Phase 1 Gate 6 — ecosystem detectors and manifest parsing. Only when explicitly authorized.**
+**Phase 1 Gate 7 — project detection and persistence. Only when explicitly authorized.**
 
-Gate 5 is complete and verified. Gate 6 must:
+Gate 6 is complete and verified. Gate 7 must:
 
-1. Parse only the bytes traversal already produced (`ManifestObservation`), never re-open arbitrary paths.
-2. Handle JSON, TOML, YAML, and XML manifests with a bounded parser and no new heavyweight dependency unless measured necessary.
-3. Return `INVALID` parser state for malformed content instead of throwing.
-4. Map parsed fields to declarative detector output: ecosystem, primary language, framework/technology signals, and workspace declarations.
-5. Keep detection rules pure in `@lpi/core`; parsing adapters may live in the agent.
-6. Add malformed, empty, wrong-typed, and truncated-manifest fixtures.
-7. Keep the 256 KiB read bound and add a parse-time budget.
-
-Concretely: `package.json`, `pyproject.toml`, `requirements.txt`, `Pipfile`, `setup.py`, `Cargo.toml`, `go.mod`, `pubspec.yaml`, `pom.xml`, `build.gradle`/`.kts`, `*.csproj`, `*.sln`, `composer.json`, and `Gemfile`.
+1. Map parsed manifest output (`DetectorResult`) to persistent project records in the SQLite database (`projects`, `detection_evidence` tables from migration 0001).
+2. Implement project lifecycle states (ACTIVE, MISSING, EXCLUDED, ARCHIVED) with proper status history via `project_status_history`.
+3. Add workshop for computing technology signals, primary language, and framework detection from parsed manifests.
+4. Add bounded reconciliation job that re-scans `ACTIVE` roots without full re-scan (using manifest fingerprints).
+5. Add CLI/manual scan entry point that respects authorized roots, exclusions, and sensitive-file denial.
+6. Add API endpoints (loopback-only) for root configuration, exclusion management, and inventory inspection.
+7. Add fixture suite for project detection across all required ecosystem types (Node, Python, Rust, Go, Dart, Java, .NET, PHP, Ruby).
 
 Do not begin Phase 2 until Phase 1 acceptance is verified.

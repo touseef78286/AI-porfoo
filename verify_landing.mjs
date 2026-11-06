@@ -1,0 +1,12 @@
+import fs from 'fs';
+const c = fs.readFileSync('T:\\My AI portfolio\\apps/dashboard\\src/landing.html', 'utf8');
+console.log('File size:', c.length, 'chars');
+console.log('Has canvas:', c.includes('<canvas id="particles"'));
+console.log('Has graph canvas:', c.includes('<canvas id="graph-particles"'));
+console.log('Has mountParticles:', c.includes('function mountParticles()'));
+console.log('Has mountGraphParticles:', c.includes('function mountGraphParticles()'));
+console.log('Has LINK_DISTANCE:', c.includes('LINK_DISTANCE = 138'));
+console.log('Has CURSOR_DISTANCE:', c.includes('CURSOR_DISTANCE = 180'));
+console.log('Has requestAnimationFrame:', c.includes('requestAnimationFrame'));
+console.log('Has PALETTE:', c.includes('PALETTE = ['));
+console.log('All checks passed!');

@@ -20,6 +20,7 @@ const PHASE_1_TABLES = [
   "project_status_history",
   "project_technologies",
   "projects",
+  "publication_snapshots",
   "scan_errors",
   "scan_runs",
   "schema_migrations",

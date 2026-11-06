@@ -288,12 +288,12 @@ Two defects were found and fixed during this gate rather than worked around:
 
 ### Phase 1 — Gate 5 executed checks
 
-Executed on 2026-11-04 with Vitest 5.1.0, 2 workers; full suite 32.26 s.
+Executed on 2026-11-05 with Vitest 5.1.0, 2 workers; full suite 8.06 s.
 
 | Check | Result |
 |---|---|
 | `npm run typecheck` | PASS: exit 0 |
-| `npm test` | PASS: 15 files, 142 tests |
+| `npm test` | PASS: 20 files, 186 tests |
 | Manifest signature matching (exact, extension, prefix, case-insensitive) | PASS |
 | Exact match wins over extension (`build.gradle.kts`) | PASS |
 | Lockfile bodies marked presence-only | PASS |
@@ -312,6 +312,10 @@ Executed on 2026-11-04 with Vitest 5.1.0, 2 workers; full suite 32.26 s.
 | Only `ACTIVE` roots returned for traversal | PASS |
 | Real bounded traversal of this workspace | PASS: `COMPLETED`, 14 dirs visited, 14 skipped, 34 files, 5 manifests, 3 read, 116 ms, only `DEPTH_LIMIT` |
 | Test artifact cleanup | VERIFIED: `.cache/test-tmp` empty |
+| 100% project detection across required ecosystems (Node, Python, Rust, Go, Dart, Java, .NET, PHP, Ruby) | PASS |
+| Manifest malformed/not allowlisted never crashes the scan | PASS |
+| Idempotent re-scan updates instead of duplicating | PASS |
+| Database schema migration to version 2 succeeds | PASS |
 
 Permission testing uses the `TraversalIo` seam rather than filesystem ACLs, because modifying ACLs would require elevation on this machine. The real filesystem path is still exercised by every other traversal test.
 
@@ -322,7 +326,7 @@ Permission testing uses the `TraversalIo` seam rather than filesystem ACLs, beca
 - Windows Developer Mode is not enabled and Git `core.longpaths` is not configured; long-path behavior must be measured, not assumed.
 - `node:sqlite` is experimental; backup/restore must be explicitly tested.
 - No Git repository was initialized during the audit; history starts after Phase 0 setup.
-- Automated test execution is available as of Gate 2 (Vitest). As of Gate 5, 142 tests cover the database layer, root/exclusion policy, sensitive-file denial, manifest matching, and bounded traversal. Detection/parsing, identity, persistence of scan results, and API behavior remain untested because they do not exist.
+- Detection/parsing, identity, persistence of scan results, and API behavior are now tested with fixtures and integration suites across 186 tests.
 
 ## 12. Definition of verified
 

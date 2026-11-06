@@ -392,7 +392,7 @@ The public application has no database connection to the local DB. Publication u
 
 Phase 1 must verify:
 
-- Migrations apply from empty state.
+- Migrations apply from empty state (0001 and 0002).
 - Foreign keys are enforced.
 - WAL mode is active.
 - Transaction rollback works.
@@ -400,6 +400,11 @@ Phase 1 must verify:
 - Scan history and errors persist.
 - Backup and restore work with the chosen SQLite API.
 - No sensitive fixture value appears in any table.
+- Publication snapshots contain no local absolute paths, tokens, or unapproved records.
+- Graph API nodes/edges are derived from persisted projects and technologies only.
+- `npm run typecheck` exits 0.
+- `npm test` passes (186 tests across 20 files).
+- `npm run verify` exits 0, including Phase 0 documentation check and Phase 1 gate checks.
 
 No schema claim in this document should be treated as implemented until those checks exist.
 

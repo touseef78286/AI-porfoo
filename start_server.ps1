@@ -1,0 +1,1 @@
+tsx 'T:\My AI portfolio\apps\agent\src\api\index.ts'

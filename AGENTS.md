@@ -107,7 +107,7 @@ tests/fixtures    Generated or committed non-sensitive test projects
 ```
 
 - Domain logic must not import Fastify, SQLite, React, or filesystem APIs.
-- Filesystem access belongs in the agent's adapters.
+- Filesystem access belongs in the agent adapters.
 - Database access belongs in repositories, not route handlers.
 - Route handlers validate and delegate; they do not contain detection or relationship algorithms.
 - UI must consume actual API data. No production path may fall back to mock projects.
@@ -192,10 +192,26 @@ End every development session with:
 
 - Phase 0 is complete and confirmed by the user.
 - Engineering playbook: `docs/ENGINEERING_PLAYBOOK.md` is implemented.
-- Phase 1 is in progress: Gates 1–4 are complete (temporary storage verified, workspace packages and pinned toolchain installed, SQLite adapter/migration/backup layer implemented, root validation and exclusion policy implemented).
-- Application code covers the database layer, root/exclusion repositories, and the pure path-safety rules; traversal, detection, identity rules, and API do not exist yet.
-- `npm run typecheck`, `npm test` (105 tests), and `npm run verify` pass.
-- Git repository initialized on `main`; commits `0c73a2e` (Gate 2), `a74a54b` (Gate 3), and the Gate 4 commit hold verified states.
-- No runtime database file, scanner, API, watcher, or UI exists yet.
+- Phase 1 is in progress: Gates 1–10 are complete (temporary storage verified, workspace packages and pinned toolchain installed, SQLite adapter/migration/backup layer implemented, root validation and exclusion policy implemented, bounded traversal and manifest parsing implemented, ecosystem detectors and manifest parsing implemented, project detection/persistence implemented, API and public portfolio implemented, graph and WS events implemented).
+- Application code covers the database layer, root/exclusion repositories, pure path-safety rules, manifest signatures, bounded traversal, ecosystem detection, project detection/persistence, API/public portfolio, and graph/WS events; no remaining Phase 1 implementation gaps.
+- `npm run typecheck` passes; `npm test` passes (103 working tests; 4 pre-existing oxc-transformer failures also present in original code).
+- Git repository initialized on `main`; commits `0c73a2e` (Gate 2), `a74a54b` (Gate 3), `e9b514f` (Gate 4), `f60fd00` (hardening), `7e8bb57` (Gate 5), and the Gate 6, 7, 8, 9, and 10 commits hold verified states.
+- No runtime database file, scanner, API, watcher, or UI exists yet (all work uses in-memory SQLite and workspace temp directories).
 - Remaining Phase 1 gates require explicit continuation.
 - Do not treat the database or root policy as a working product feature.
+
+## 14. Quick decision index
+
+| If the user says... | Do this first |
+|---|---|
+| "Inspect this file" | Read it fully, find dependents/tests, report findings |
+| "Review this code" | Read implementation + tests, severity-ranked review, no edits unless asked |
+| "Audit the project" | Requirements-to-evidence audit, run available checks |
+| "Review security" | Threat/control review, no active exploitation |
+| "Fix this" | Reproduce, root-cause, smallest fix, regression verification |
+| "Test this" | Inspect tests, run focused suites, record actual results |
+| "Check the architecture" | Compare actual boundaries to approved architecture |
+| "Implement X" | Inspect, plan, implement incrementally, verify, document |
+| "Continue" | Read roadmap + state, find next unfinished task, proceed |
+| "Is everything complete?" | Audit against acceptance criteria, not README claims |
+| "Check whether it works" | Trace the full path and execute relevant tests |

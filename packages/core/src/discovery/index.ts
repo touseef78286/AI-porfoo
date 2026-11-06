@@ -5,12 +5,36 @@ export {
   matchManifest,
   shouldReadManifest,
 } from "./manifests.js";
+
 export type {
-  Ecosystem,
   ManifestSignature,
   SignatureMatch,
   SignatureStrength,
 } from "./manifests.js";
+
+export type {
+  DetectorResult,
+  Ecosystem,
+  ManifestEcosystem,
+  TechnologySignature,
+  TechnologyKind,
+  DetectionState,
+  DetectionConfidence,
+} from "./manifest-parser.js";
+
+export {
+  parseManifest,
+  exceedsParserBound,
+  isParserStateInvalid,
+} from "./manifest-parser.js";
+
+export {
+  TECHNOLOGY_RULES,
+  collectTechnologies,
+  normalizeDependencyName,
+  technologySpecFor,
+  toSignature,
+} from "./technologies.js";
 
 export {
   DEFAULT_TRAVERSAL_LIMITS,
@@ -18,6 +42,7 @@ export {
   emptyTraversalStats,
   normalizeTraversalLimits,
 } from "./traversal-policy.js";
+
 export type {
   ManifestObservation,
   ManifestParserState,

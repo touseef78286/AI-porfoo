@@ -45,16 +45,22 @@ afterEach(() => {
 });
 
 describe("loadMigrations", () => {
-  it("loads the committed migration with a SHA-256 checksum", () => {
+  it("loads the committed migrations with SHA-256 checksums", () => {
     const migrations = loadMigrations(defaultMigrationsDirectory());
 
-    expect(migrations).toHaveLength(1);
+    expect(migrations).toHaveLength(2);
 
     const first = migrations[0];
 
     expect(first?.version).toBe(1);
     expect(first?.name).toBe("0001_discovery_schema.sql");
     expect(first?.checksum).toMatch(/^[0-9a-f]{64}$/);
+
+    const second = migrations[1];
+
+    expect(second?.version).toBe(2);
+    expect(second?.name).toBe("0002_publication.sql");
+    expect(second?.checksum).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it("rejects non-contiguous versions", () => {
@@ -75,9 +81,9 @@ describe("applyMigrations", () => {
 
     const result = applyMigrations(database, migrations);
 
-    expect(result.appliedVersions).toEqual([1]);
-    expect(result.currentVersion).toBe(1);
-    expect(readScalarInt(database, "SELECT COUNT(*) FROM schema_migrations")).toBe(1);
+    expect(result.appliedVersions).toEqual([1, 2]);
+    expect(result.currentVersion).toBe(2);
+    expect(readScalarInt(database, "SELECT COUNT(*) FROM schema_migrations")).toBe(2);
     expect(
       readScalarInt(
         database,
@@ -94,8 +100,8 @@ describe("applyMigrations", () => {
     const second = applyMigrations(database, migrations);
 
     expect(second.appliedVersions).toEqual([]);
-    expect(second.currentVersion).toBe(1);
-    expect(readScalarInt(database, "SELECT COUNT(*) FROM schema_migrations")).toBe(1);
+    expect(second.currentVersion).toBe(2);
+    expect(readScalarInt(database, "SELECT COUNT(*) FROM schema_migrations")).toBe(2);
   });
 
   it("rejects an applied migration whose checksum changed", () => {
