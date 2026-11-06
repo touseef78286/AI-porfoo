@@ -2,5 +2,11 @@
   "installCommand": "npm install --ignore-engines",
   "buildCommand": "echo 'Static site - no build needed'",
   "outputDirectory": ".",
-  "framework": null
+  "framework": null,
+  "routes": [
+    {
+      "src": "/.*",
+      "dest": "/index.html"
+    }
+  ]
 }
